@@ -1,0 +1,200 @@
+/*
+*  Frappe Active Users © 2023
+*  Author:  Ameen Ahmed
+*  Company: Level Up Marketing & Software Development Services
+*  Licence: Please refer to LICENSE file
+*/
+
+.active-users-list {
+    left: auto;
+    right: 0;
+    padding: 0;
+    width: 260px;
+    overflow: hidden;
+}
+html[dir="rtl"] .active-users-list {
+    left: 0;
+    right: auto;
+}
+.active-users-list-header,
+.active-users-list-footer {
+    background: #ddd;
+}
+[data-theme="dark"] .active-users-list-header,
+[data-theme="dark"] .active-users-list-footer {
+    background: #222;
+}
+.active-users-list-header,
+.active-users-footer-text {
+    font-weight: 300;
+    line-height: 1.2;
+    color: #000;
+}
+.active-users-list-header {
+    padding: 10px 25px;
+    height: 40px;
+    font-size: .9rem;
+}
+[data-theme="dark"] .active-users-list-header,
+[data-theme="dark"] .active-users-footer-text {
+    color: #fff;
+}
+html[dir="rtl"] .active-users-list-header,
+html[dir="rtl"] .active-users-footer-text {
+    text-align: right;
+}
+.active-users-list-footer {
+    padding: 5px 25px;
+}
+.active-users-list-footer > div {
+    align-items: center;
+    height: 30px;
+}
+.active-users-footer-text {
+    font-size: .8rem;
+}
+.active-users-footer-icon {
+    width: 50px;
+}
+.active-users-footer-reload {
+    display: block;
+    text-align: right;
+    color: #888;
+    text-decoration: none;
+}
+html[dir="rtl"] .active-users-footer-reload {
+    text-align: left;
+}
+.active-users-footer-reload:hover {
+    text-decoration: none;
+    color: #000;
+}
+[data-theme="dark"] .active-users-footer-reload:hover {
+    color: #fff;
+}
+.active-users-list-body {
+    max-height: 260px;
+    overflow-y: auto;
+}
+.active-users-list-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 260px;
+}
+.active-users-list-loading-box,
+.active-users-list-loading-box:before,
+.active-users-list-loading-box:after {
+    border-radius: 50%;
+    width: 2em;
+    height: 2em;
+    animation-fill-mode: both;
+    animation: active-users-loader 1.8s infinite ease-in-out;
+}
+.active-users-list-loading-box {
+    position: relative;
+    color: #888;
+    font-size: 7px;
+    text-indent: -9999em;
+    transform: translateZ(0);
+    animation-delay: -0.16s;
+}
+[data-theme="dark"] .active-users-list-loading-box {
+    color: #fff;
+}
+.active-users-list-loading-box:before,
+.active-users-list-loading-box:after {
+    content: '';
+    position: absolute;
+    top: 0;
+}
+.active-users-list-loading-box:before {
+    left: -3.5em;
+    animation-delay: -0.32s;
+}
+.active-users-list-loading-box:after {
+    left: 3.5em;
+}
+@keyframes active-users-loader {
+    0%, 80%, 100% { box-shadow: 0 2.5em 0 -1.3em }
+    40% { box-shadow: 0 2.5em 0 0 }
+}
+@-o-keyframes active-users-loader {
+    0%, 80%, 100% {
+        -o-box-shadow: 0 2.5em 0 -1.3em;
+        box-shadow: 0 2.5em 0 -1.3em;
+    }
+    40% {
+        -o-box-shadow: 0 2.5em 0 0;
+        box-shadow: 0 2.5em 0 0;
+    }
+}
+@-ms-keyframes active-users-loader {
+    0%, 80%, 100% {
+        -ms-box-shadow: 0 2.5em 0 -1.3em;
+        box-shadow: 0 2.5em 0 -1.3em;
+    }
+    40% {
+        -ms-box-shadow: 0 2.5em 0 0;
+        box-shadow: 0 2.5em 0 0;
+    }
+}
+@-webkit-keyframes active-users-loader {
+    0%, 80%, 100% {
+        -webkit-box-shadow: 0 2.5em 0 -1.3em;
+        box-shadow: 0 2.5em 0 -1.3em;
+    }
+    40% {
+        -webkit-box-shadow: 0 2.5em 0 0;
+        box-shadow: 0 2.5em 0 0;
+    }
+}
+@-moz-keyframes active-users-loader {
+    0%, 80%, 100% {
+        -moz-box-shadow: 0 2.5em 0 -1.3em;
+        box-shadow: 0 2.5em 0 -1.3em;
+    }
+    40% {
+        -moz-box-shadow: 0 2.5em 0 0;
+        box-shadow: 0 2.5em 0 0;
+    }
+}
+.active-users-list-item {
+    align-items: center;
+    padding: 5px 10px;
+    border-bottom: 1px solid #f6f6f6;
+}
+[data-theme="dark"] .active-users-list-item {
+    border-bottom: 1px solid #262626;
+}
+.active-users-list-item:last-child {
+    border-bottom: 0;
+}
+.active-users-item-avatar {
+    padding: 0 15px;
+}
+.active-users-item-avatar > .avatar {
+    width: 30px;
+    height: 30px;
+}
+.active-users-item-name {
+    padding-left: 0;
+    padding-right: 15px;
+    font-size: .8rem;
+    text-align: left;
+    display: -moz-box;
+    display: -webkit-box;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -o-box-orient: vertical;
+    -o-line-clamp: 1;
+    -moz-box-orient: vertical;
+    -moz-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+}
+html[dir="rtl"] .active-users-item-name {
+    padding-left: 15px;
+    padding-right: 0;
+    text-align: right;
+}

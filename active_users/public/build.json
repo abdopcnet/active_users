@@ -1,0 +1,4 @@
+{
+  "active_users/js/active_users.js": ["public/js/active_users.bundle.js"],
+  "active_users/css/active_users.css": ["public/css/active_users.bundle.css"]
+}
