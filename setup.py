@@ -1,5 +1,5 @@
-# Active Users © 2023
-# Author:  Ameen Ahmed
+# Active Users © 2025
+# Author:  future_support
 # Company: Level Up Marketing & Software Development Services
 # Licence: Please refer to LICENSE file
 
@@ -16,8 +16,8 @@ setup(
     name="active_users",
     version=version,
     description="Frappe plugin that displays a list of current active users.",
-    author="Ameen Ahmed (Level Up)",
-    author_email="kid1194@gmail.com",
+    author="future_support",
+    author_email="abdopcnet@gmail.com",
     packages=find_packages(),
     zip_safe=False,
     include_package_data=True,

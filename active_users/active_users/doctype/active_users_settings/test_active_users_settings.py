@@ -1,4 +1,4 @@
-# Copyright (c) 2025, Ameen Ahmed (Level Up) and Contributors
+# Copyright (c) 2025, future_support (Level Up) and Contributors
 # See license.txt
 
 # import frappe

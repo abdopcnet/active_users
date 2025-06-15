@@ -1,6 +1,6 @@
 /*
-*  Frappe Active Users © 2023
-*  Author:  Ameen Ahmed
+*  Frappe Active Users © 2025
+*  Author:  future_support
 *  Company: Level Up Marketing & Software Development Services
 *  Licence: Please refer to LICENSE file
 */

@@ -12,13 +12,8 @@
   "refresh_interval",
   "allow_manual_refresh",
   "visibility_section",
-  "user_types",
-  "hidden_from_listed_roles",
-  "roles",
-  "hidden_from_listed_users",
   "users",
-  "visibility_column",
-  "visibility_note"
+  "visibility_column"
  ],
  "fields": [
   {
@@ -57,34 +52,6 @@
    "label": "Visibility"
   },
   {
-   "fieldname": "user_types",
-   "fieldtype": "Table MultiSelect",
-   "label": "User Types To Display",
-   "options": "Active Users Has User Type",
-   "read_only_depends_on": "eval:!doc.enabled"
-  },
-  {
-   "default": "0",
-   "fieldname": "hidden_from_listed_roles",
-   "fieldtype": "Check",
-   "label": "Hidden From Listed Roles",
-   "read_only_depends_on": "eval:!doc.enabled"
-  },
-  {
-   "fieldname": "roles",
-   "fieldtype": "Table MultiSelect",
-   "label": "Roles",
-   "options": "Active Users Has Role",
-   "read_only_depends_on": "eval:!doc.enabled"
-  },
-  {
-   "default": "0",
-   "fieldname": "hidden_from_listed_users",
-   "fieldtype": "Check",
-   "label": "Hidden From Listed Users",
-   "read_only_depends_on": "eval:!doc.enabled"
-  },
-  {
    "fieldname": "users",
    "fieldtype": "Table MultiSelect",
    "label": "Users",
@@ -94,17 +61,12 @@
   {
    "fieldname": "visibility_column",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "visibility_note",
-   "fieldtype": "HTML",
-   "read_only": 1
   }
  ],
  "icon": "fa fa-cog",
  "issingle": 1,
  "links": [],
- "modified": "2025-02-02 20:03:41.662678",
+ "modified": "2025-06-05 23:32:04.064388",
  "modified_by": "Administrator",
  "module": "Active Users",
  "name": "Active Users Settings",
@@ -135,6 +97,5 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": [],
- "track_changes": 1
+ "states": []
 }

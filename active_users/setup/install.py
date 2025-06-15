@@ -1,5 +1,5 @@
-# Active Users © 2023
-# Author:  Ameen Ahmed
+# Active Users © 2025
+# Author:  future_support
 # Company: Level Up Marketing & Software Development Services
 # Licence: Please refer to LICENSE file
 
@@ -8,16 +8,12 @@ import frappe
 
 from active_users.utils.common import (
     _SETTINGS_,
-    settings,
-    clear_document_cache
+    settings
 )
 from .migrate import after_migrate
 
 
 def after_install():
-    clear_document_cache(_SETTINGS_)
-    frappe.clear_cache()
-    
     doc = settings(True)
     
     user_types = None
