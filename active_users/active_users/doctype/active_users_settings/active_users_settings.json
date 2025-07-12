@@ -1,0 +1,96 @@
+{
+ "actions": [],
+ "creation": "2022-04-04 04:04:04.119400",
+ "description": "Active users settings",
+ "doctype": "DocType",
+ "document_type": "Document",
+ "engine": "InnoDB",
+ "field_order": [
+  "info_section",
+  "enabled",
+  "info_column",
+  "refresh_interval",
+  "visibility_section",
+  "users",
+  "visibility_column"
+ ],
+ "fields": [
+  {
+   "fieldname": "info_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Is Enabled"
+  },
+  {
+   "fieldname": "info_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "5",
+   "description": "The number of minutes to wait before refreshing the active users list",
+   "fieldname": "refresh_interval",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Refresh Interval (Minutes)",
+   "non_negative": 1,
+   "read_only_depends_on": "eval:!doc.enabled",
+   "reqd": 1
+  },
+  {
+   "fieldname": "visibility_section",
+   "fieldtype": "Section Break",
+   "label": "Visibility"
+  },
+  {
+   "fieldname": "users",
+   "fieldtype": "Table MultiSelect",
+   "label": "Users",
+   "options": "Active Users Has User",
+   "read_only_depends_on": "eval:!doc.enabled"
+  },
+  {
+   "fieldname": "visibility_column",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "icon": "fa fa-cog",
+ "issingle": 1,
+ "links": [],
+ "modified": "2025-07-09 17:11:55.788762",
+ "modified_by": "Administrator",
+ "module": "Active Users",
+ "name": "Active Users Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Administrator",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
