@@ -18,7 +18,6 @@ if (window.frappe && window.frappe._active_users && window.frappe._active_users.
     try {
         window.frappe._active_users._init.destroy();
     } catch (e) {
-        console.log('[ActiveUsers] Cleaned up');
     }
     window.frappe._active_users._init = null;
 }
@@ -26,7 +25,6 @@ if (window.frappe && window.frappe._active_users && window.frappe._active_users.
 
 class ActiveUsers {
     constructor() {
-        console.log('[ActiveUsers] Constructor');
         if (frappe.desk == null) {
             frappe.throw(__('Active Users plugin can not be used outside Desk.'));
             return;
@@ -53,7 +51,6 @@ class ActiveUsers {
         this.setup();
     }
     destroy() {
-        console.log('[ActiveUsers] Destroy');
         this.clear_sync();
         if (this.$loading) this.$loading.hide();
         if (this.$reload) this.$reload.off('click').hide();
@@ -62,7 +59,6 @@ class ActiveUsers {
         this.$app = this.$body = this.$loading = this.$footer = this.$reload = null;
     }
     error(msg, args) {
-        console.error('[ActiveUsers] Error:', msg, args);
         // إذا كان الخطأ متعلق بالصلاحية، تجاهله بصمت
         if (msg && typeof msg === 'string' && msg.indexOf('permission') !== -1) {
             return;
@@ -71,7 +67,6 @@ class ActiveUsers {
         frappe.throw(__(msg, args));
     }
     request(method, callback, type) {
-        console.log(`[ActiveUsers] Request: ${method}, ${type}`);
         var me = this;
         return new Promise(function(resolve, reject) {
             let data = {
@@ -97,14 +92,12 @@ class ActiveUsers {
             try {
                 frappe.call(data);
             } catch(e) {
-                (console.error || console.log)('[ActiveUsers] Error', e);
                 this.error('An error has occurred while sending a request.');
                 reject();
             }
         });
     }
     setup() {
-        console.log('[ActiveUsers] Setup');
         // إظهار الأيقونة الحمراء دائماً للجميع
         this.setup_display();
         if (!this.is_online) {
@@ -127,7 +120,6 @@ class ActiveUsers {
         });
     }
     sync_settings() {
-        console.log('[ActiveUsers] Sync Settings');
         return this.request(
             'get_settings',
             function(res) {
@@ -139,7 +131,6 @@ class ActiveUsers {
         );
     }
     setup_display() {
-        console.log('[ActiveUsers] Display');
         let title = __('Active Users');
         // إذا كانت الأيقونة موجودة مسبقاً لا تضفها مرة أخرى
         if ($('header.navbar > .container > .navbar-collapse > ul.navbar-nav .active-users-navbar-item').length) return;
@@ -186,7 +177,6 @@ class ActiveUsers {
         });
     }
     sync_reload() {
-        console.log('[ActiveUsers] Reload');
         if (!this.is_online) return;
         this.clear_sync();
         var me = this;
@@ -195,14 +185,12 @@ class ActiveUsers {
             .then(function() { me.setup_sync(); });
     }
     clear_sync() {
-        console.log('[ActiveUsers] Clear Sync');
         if (this.sync_timer) {
             window.clearInterval(this.sync_timer);
             this.sync_timer = null;
         }
     }
     sync_data() {
-        console.log('[ActiveUsers] sync_data() called');
         this._syncing = true;
         if (this.data.length) {
             this.$footer.html('');
@@ -211,37 +199,30 @@ class ActiveUsers {
         // Remove loading animation that might be leftover
         this.$body.find('.active-users-list-loading').remove();
         
-        console.log('[Active Users v2.0] Starting data sync...');
         this.request(
             'get_users',
             function(res) {
-                console.log('[Active Users v2.0] Full API response:', res);
                 if (res && res.error) {
-                    console.error('[Active Users v2.0] Backend error:', res.message);
                     this.$body.html('<div class="text-danger" style="padding: 20px; text-align: center;">خطأ في الخادم</div>');
                     return;
                 }
                 
                 this.data = res && res.users && Array.isArray(res.users) ? res.users : [];
-                console.log('[Active Users v2.0] Processed data:', this.data);
                 this.update_list();
                 this._syncing = null;
             },
             'users list'
         ).catch((err) => {
-            console.error('[Active Users v2.0] Request failed:', err);
             this.$body.html('<div class="text-danger" style="padding: 20px; text-align: center;">فشل في تحميل البيانات</div>');
         });
     }
     setup_sync() {
-        console.log('[ActiveUsers] setup_sync() called');
         var me = this;
         this.sync_timer = window.setInterval(function() {
             me.sync_data();
         }, this.settings.refresh_interval);
     }
     update_settings() {
-        console.log('[ActiveUsers] update_settings() called');
         if (!this.is_online) {
             this.on_online = this.update_settings;
             return;
@@ -258,20 +239,12 @@ class ActiveUsers {
         });
     }
     update_list() {
-        console.log('[ActiveUsers] update_list() called');
-        console.log('[Active Users v2.0] VERSION CHECK: window.ACTIVE_USERS_V2_LOADED =', window.ACTIVE_USERS_V2_LOADED);
-        
         if (!window.ACTIVE_USERS_V2_LOADED) {
-            console.error('[Active Users v2.0] ERROR: Old version is still running!');
-            console.error('[Active Users v2.0] Attempting to reload...');
             setTimeout(() => {
                 window.location.reload(true);
             }, 1000);
             return;
         }
-        
-        console.log('[Active Users v2.0] Data length:', this.data ? this.data.length : 'null');
-        console.log('[Active Users v2.0] Raw data:', this.data);
         
         var me = this;
         
@@ -279,13 +252,10 @@ class ActiveUsers {
         this.$body.empty().html('');
         
         if (!this.data || !this.data.length) {
-            console.log('[Active Users v2.0] No data - showing empty message');
             this.$body.html('<div class="text-center" style="padding: 30px; color: #666;">لا توجد مستخدمين نشطين</div>');
             this.$footer.html('');
             return;
         }
-        
-        console.log('[Active Users v2.0] Building table with', this.data.length, 'users');
         
         // Build complete table HTML
         let tableHTML = `
@@ -297,8 +267,6 @@ class ActiveUsers {
         `;
         
         this.data.forEach(function(user, index) {
-            console.log('[Active Users v2.0] Processing user', index + 1, ':', user);
-            
             let firstName = user.first_name || 'غير محدد';
             let lastActive = user.last_active || 'غير محدد';
             
@@ -307,7 +275,7 @@ class ActiveUsers {
                 try {
                     lastActive = frappe.datetime.str_to_user(lastActive);
                 } catch (e) {
-                    console.warn('[Active Users v2.0] Date formatting failed for:', lastActive);
+                    // Date formatting failed, keep original value
                 }
             }
             
@@ -321,41 +289,31 @@ class ActiveUsers {
         
         tableHTML += '</div>';
         
-        console.log('[Active Users v2.0] Final HTML length:', tableHTML.length);
         this.$body.html(tableHTML);
         this.$footer.html('المستخدمين النشطين');
-        
-        console.log('[Active Users v2.0] ===== UPDATE LIST COMPLETED =====');
     }
 }
 
 frappe._active_users.init = function() {
-    console.log('[ActiveUsers] frappe._active_users.init() called');
-    
     if (frappe._active_users._init) {
-        console.log('[Active Users v2.0] Destroying old instance');
         try {
             frappe._active_users._init.destroy();
         } catch (e) {
-            console.log('[Active Users v2.0] Error destroying old instance:', e);
+            // Error destroying old instance
         }
     }
     
     if (frappe.desk == null) {
-        console.log('[Active Users v2.0] Desk not available');
         return;
     }
     
-    console.log('[Active Users v2.0] Creating new ActiveUsers instance');
     frappe._active_users._init = new ActiveUsers();
 
     // Set a flag to indicate the new version is loaded
     window.ACTIVE_USERS_V2_LOADED = true;
-    console.log('[Active Users v2.0] Version 2.0 flag set');
 };
 
 $(document).ready(function() {
-    console.log('[ActiveUsers] Document ready');
     frappe._active_users.init();
 
     // إضافة فتح القائمة عند المرور بالماوس على الأيقونة
