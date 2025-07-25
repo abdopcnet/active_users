@@ -166,8 +166,8 @@ class ActiveUsers {
         this.$footer = this.$app.find('.active-users-footer-text').first();
         this.$reload = null;
 
-        // إعادة تفعيل حدث التحديث عند المرور على أيقونة الريلود الحمراء في الأعلى
-        this.$app.find('.active-users-navbar-reload').on('mouseenter', () => {
+        // إعادة تفعيل حدث التحديث عند الضغط على أيقونة الريلود الحمراء في الأعلى
+        this.$app.find('.active-users-navbar-reload').on('click', () => {
             // دائماً نفذ clear_cache
             frappe.ui.toolbar.clear_cache();
             // إذا كان المستخدم مصرح له فقط، نفذ sync_reload
