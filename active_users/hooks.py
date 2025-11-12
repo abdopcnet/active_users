@@ -17,8 +17,3 @@ doctype_list_js = {"User" : "/public/js/user_bulk_enable_disable.js"}
 
 app_include_css = "assets/active_users/css/active_users_bundle.css"
 app_include_js = "assets/active_users/js/active_users_bundle.js"
-
-fixtures = [
-    {"doctype": "Client Script", "filters": [["module", "=", "Active Users"]]},
-    {"doctype": "Property Setter", "filters": [["module", "=", "Active Users"]]},
-]
