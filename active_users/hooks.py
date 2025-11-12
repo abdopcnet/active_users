@@ -19,6 +19,5 @@ app_include_css = "assets/active_users/css/active_users_bundle.css"
 app_include_js = "assets/active_users/js/active_users_bundle.js"
 
 fixtures = [
-    {"doctype": "Client Script", "filters": [["module", "=", "Active Users"]]},
-    {"doctype": "Server Script", "filters": [["module", "=", "Active Users"]]},
+    {"doctype": "Client Script", "filters": [["module", "=", "Active Users"]]}
 ]
