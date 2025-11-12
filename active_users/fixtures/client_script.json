@@ -1,0 +1,13 @@
+[
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "User",
+  "enabled": 1,
+  "modified": "2025-11-12 15:22:23.611942",
+  "module": "Active Users",
+  "name": "change_language_for_user",
+  "script": "frappe.ui.form.on('User', {\r\n    refresh(frm) {\r\n        // إذا اللغة الحالية إنجليزية، أظهر زر لتغييرها إلى العربية\r\n        if (frm.doc.language === 'en') {\r\n            frm.add_custom_button(__('تغيير اللغة إلى العربية'), () => {\r\n                frm.set_value('language', 'ar');\r\n                frm.save();\r\n            });\r\n        }\r\n\r\n        // إذا اللغة الحالية عربية، أظهر زر لتغييرها إلى الإنجليزية\r\n        else if (frm.doc.language === 'ar') {\r\n            frm.add_custom_button(__('تغيير اللغة إلى الإنجليزية'), () => {\r\n                frm.set_value('language', 'en');\r\n                frm.save();\r\n            });\r\n        }\r\n    }\r\n});\r\n",
+  "view": "Form"
+ }
+]
