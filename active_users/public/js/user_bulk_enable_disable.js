@@ -8,16 +8,16 @@ frappe.listview_settings["User"] = {
         return;
       }
 
-      // Update each selected user on the server. Use frappe.db.set_value to avoid
-      // relying on a client-side doc.save() which is not available in list view.
-      const promises = selected.map(function (row) {
-        return frappe.db.set_value("User", row.name, { enabled: 1 }).then(() => {
-          frappe.show_alert({ message: __(row.name + " Enabled"), indicator: "green" });
-        });
-      });
-
-      // Refresh after all updates complete
-      Promise.all(promises).then(() => listview.refresh());
+      // Update each selected user sequentially to avoid deadlocks
+      async function enableUsers() {
+        for (const row of selected) {
+          await frappe.db.set_value("User", row.name, { enabled: 1 }).then(() => {
+            frappe.show_alert({ message: __(row.name + " Enabled"), indicator: "green" });
+          });
+        }
+        listview.refresh();
+      }
+      enableUsers();
     });
 
     // --- Disable Users ---
@@ -28,16 +28,16 @@ frappe.listview_settings["User"] = {
         return;
       }
 
-      // Update each selected user on the server. Use frappe.db.set_value to avoid
-      // relying on a client-side doc.save() which is not available in list view.
-      const disable_promises = selected.map(function (row) {
-        return frappe.db.set_value("User", row.name, { enabled: 0 }).then(() => {
-          frappe.show_alert({ message: __(row.name + " Disabled"), indicator: "red" });
-        });
-      });
-
-      // Refresh after all updates complete
-      Promise.all(disable_promises).then(() => listview.refresh());
+      // Update each selected user sequentially to avoid deadlocks
+      async function disableUsers() {
+        for (const row of selected) {
+          await frappe.db.set_value("User", row.name, { enabled: 0 }).then(() => {
+            frappe.show_alert({ message: __(row.name + " Disabled"), indicator: "red" });
+          });
+        }
+        listview.refresh();
+      }
+      disableUsers();
     });
 
     // --- Disable All (Except Admin/Guest) ---
@@ -54,20 +54,20 @@ frappe.listview_settings["User"] = {
             ],
             fields: ["name"],
           },
-          callback: function (r) {
+          callback: async function (r) {
             if (r.message && r.message.length > 0) {
               const users_to_disable = r.message;
-              const disable_all_promises = users_to_disable.map(function (user) {
-                return frappe.db.set_value("User", user.name, { enabled: 0 });
-              });
 
-              Promise.all(disable_all_promises).then(() => {
-                frappe.show_alert({
-                  message: __("{0} users disabled", [users_to_disable.length]),
-                  indicator: "orange",
-                });
-                listview.refresh();
+              // Update each user sequentially to avoid deadlocks
+              for (const user of users_to_disable) {
+                await frappe.db.set_value("User", user.name, { enabled: 0 });
+              }
+
+              frappe.show_alert({
+                message: __("{0} users disabled", [users_to_disable.length]),
+                indicator: "orange",
               });
+              listview.refresh();
             } else {
               frappe.msgprint(__("No users to disable."));
             }
