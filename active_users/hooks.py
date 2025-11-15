@@ -12,7 +12,6 @@ app_email = "abdopcnet@gmail.com"
 app_license = "MIT"
 
 
-doctype_js = {"User": "public/js/user_fix.js"}
 doctype_js = {"User": "public/js/user_change_language.js"}
 doctype_list_js = {"User": "public/js/user_bulk_enable_disable.js"}
 
