@@ -1,11 +1,8 @@
 frappe.ui.form.on("User", {
   refresh: function (frm) {
-    // Add language change button without marking form as dirty
+    // Add language change button
     if (!frm.is_new()) {
       const current_language = frm.doc.language || "en";
-
-      // Save the current dirty state
-      const was_dirty = frm.is_dirty();
 
       if (current_language === "en") {
         frm.add_custom_button(__("تغيير إلى العربية"), function () {
@@ -19,11 +16,14 @@ frappe.ui.form.on("User", {
         });
       }
 
-      // Restore the dirty state - if it wasn't dirty before, reset it
-      if (!was_dirty) {
-        frm.doc.__unsaved = 0;
-        frm.dirty();
-      }
+      // Reset dirty flag after all refresh events complete
+      // This fixes the issue where timezone field changes mark form as dirty
+      setTimeout(() => {
+        if (frm.doc.__islocal !== 1) {
+          frm.doc.__unsaved = 0;
+          frm.page.clear_indicator();
+        }
+      }, 100);
     }
   },
 });
