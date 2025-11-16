@@ -5,6 +5,7 @@
 *  Licence: Please refer to LICENSE file
 */
 
+/* ===== SECTION: Dropdown container ===== */
 .active-users-list {
   left: auto;
   right: 0;
@@ -16,6 +17,8 @@ html[dir="rtl"] .active-users-list {
   left: 0;
   right: auto;
 }
+
+/* ===== SECTION: Header/Footer bars ===== */
 .active-users-list-header,
 .active-users-list-footer {
   background: #ddd;
@@ -72,6 +75,8 @@ html[dir="rtl"] .active-users-footer-reload {
 [data-theme="dark"] .active-users-footer-reload:hover {
   color: #fff;
 }
+
+/* ===== SECTION: List body & scroll ===== */
 .active-users-list-body {
   max-height: 300px;
   overflow-y: auto;
@@ -79,6 +84,8 @@ html[dir="rtl"] .active-users-footer-reload {
   border: 1px solid #ddd;
   border-radius: 4px;
 }
+
+/* ===== SECTION: Table-like list layout ===== */
 .active-users-table-header {
   background: #f0f0f0;
   font-size: 14px;
@@ -117,6 +124,8 @@ html[dir="rtl"] .active-users-item-name {
 html[dir="rtl"] .active-users-item-last_active {
   text-align: left;
 }
+
+/* ===== SECTION: Loading indicator ===== */
 .active-users-list-loading {
   display: flex;
   align-items: center;
@@ -214,6 +223,8 @@ html[dir="rtl"] .active-users-item-last_active {
     box-shadow: 0 2.5em 0 0;
   }
 }
+
+/* ===== SECTION: Highlighted first row (decorative) ===== */
 .active-users-list-body > div > div:first-child {
   position: relative;
   border: 2px solid #d4af37;
@@ -233,4 +244,6 @@ html[dir="rtl"] .active-users-item-last_active {
   color: #222;
   box-shadow: 0 0 8px 0 #ffd70055;
 }
+
+/* ===== SECTION: Notes ===== */
 /* Legacy styles removed - now using inline styles for better control */
