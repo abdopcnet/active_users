@@ -163,74 +163,57 @@ class ActiveUsers {
       "settings"
     );
   }
-  // ===== SECTION: Navbar UI (reload icon, ping indicator, users dropdown) =====
+  // ===== SECTION: Navbar UI (reload icon, users dropdown) =====
   setup_display() {
     let title = __("Active Users");
-    // If the navbar item already exists, reuse it and ensure ping indicator exists
+    // If the navbar item already exists, reuse it
     const $existing = $(
-      "header.navbar > .container > .navbar-collapse > ul.navbar-nav .active-users-navbar-item"
+      "header.navbar .navbar-collapse ul.navbar-nav li[data-au='users-root'], header.navbar .navbar-collapse ul.navbar-nav li[data-au-item='1']"
     ).first();
     if ($existing.length) {
       this.$app = $existing;
-      if (!this.$app.find(".active-users-navbar-ping").length) {
-        const pingHtml = `
-                <span class="nav-link active-users-navbar-ping" style="cursor:default;display:inline-block;margin-right:6px;" title="Response (ms)">
-                    <span class="fa fa-bolt fa-md fa-fw" style="color:#4caf50;"></span>
-                    <span class="active-users-ping-text" style="font-weight:600;color:#4caf50;">000 ms</span>
-                </span>
-        `;
-        const $reload = this.$app.find(".active-users-navbar-reload").first();
-        if ($reload.length) {
-          $reload.after(pingHtml);
-        } else {
-          this.$app.prepend(pingHtml);
-        }
-      }
     } else {
+      // Find a robust navbar target
+      let $nav = $("header.navbar .navbar-collapse ul.navbar-nav").first();
+      // If navbar not yet in DOM, retry shortly
+      if (!$nav.length) {
+        setTimeout(() => this.setup_display(), 300);
+        return;
+      }
       this.$app = $(
         `
-            <li class="nav-item dropdown dropdown-notifications dropdown-mobile active-users-navbar-item" title="${title}">
-                <span class="nav-link active-users-navbar-reload text-danger" style="cursor:pointer;display:inline-block;margin-right:6px;" title="Reload">
+            <li data-au="users-root" data-au-item="1" title="${title}" style="list-style:none; position:relative;">
+                <span class="reload_icon" data-au-reload="1" title="Reload" style="cursor:pointer;display:inline-block;margin-right:6px;">
                     <span class="fa fa-refresh fa-md fa-fw" style="color:#e74c3c;"></span>
                 </span>
-                <span class="nav-link active-users-navbar-ping" style="cursor:default;display:inline-block;margin-right:6px;" title="Response (ms)">
-                    <span class="fa fa-bolt fa-md fa-fw" style="color:#4caf50;"></span>
-                    <span class="active-users-ping-text" style="font-weight:600;color:#4caf50;">000 ms</span>
-                </span>
-                <a class="nav-link active-users-navbar-icon text-muted"
-                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="true" data-persist="true"
-                    href="#" onclick="return false;" style="display:inline-block;">
+                <a data-au-user="1" href="#" onclick="return false;" aria-haspopup="true" aria-expanded="true" data-persist="true" title="${title}" style="display:inline-block;">
                     <span class="fa fa-user fa-lg fa-fw"></span>
                 </a>
-                <div class="dropdown-menu active-users-list" role="menu">
-                    <div class="fluid-container">
-                        <div class="active-users-list-body"></div>
+                <div class="active_users_menu" data-au-users-menu="1" role="menu" style="position:absolute; right:0; top:100%; min-width:260px; background:#fff; border:1px solid rgba(0,0,0,0.15); border-radius:8px; padding:10px 12px; display:block; visibility:hidden;">
+                    <div style="width:100%;">
+                        <div data-au-users-body="1"></div>
                     </div>
-                    <div class="row">
-                        <div class="col active-users-list-footer">
-                            <div class="row">
-                                <div class="col active-users-footer-text">المستخدمين النشطين</div>
-                            </div>
+                    <div style="width:100%; margin-top:6px;">
+                        <div>
+                            <div data-au-users-footer="1" style="padding:4px 6px; color:#2c3e50;">المستخدمين النشطين</div>
                         </div>
                     </div>
                 </div>
             </li>
         `
       );
-      $(
-        "header.navbar > .container > .navbar-collapse > ul.navbar-nav"
-      ).prepend(this.$app.get(0));
+      $nav.prepend(this.$app.get(0));
     }
-    this.$body = this.$app.find(".active-users-list-body").first();
+    this.$body = this.$app.find('[data-au-users-body="1"]').first();
     this.$loading = this.$body
       .find(".active-users-list-loading")
       .first()
       .hide();
-    this.$footer = this.$app.find(".active-users-footer-text").first();
+    this.$footer = this.$app.find('[data-au-users-footer="1"]').first();
     this.$reload = null;
 
     // Re-bind click handler on the top red reload icon
-    this.$app.find(".active-users-navbar-reload").on("click", () => {
+    this.$app.find('[data-au-reload="1"]').on("click", () => {
       window.clearCacheAndReload();
     });
   }
@@ -310,15 +293,6 @@ class ActiveUsers {
   }
   // ===== SECTION: Render users list =====
   update_list() {
-    if (!window.ACTIVE_USERS_V2_LOADED) {
-      setTimeout(() => {
-        window.location.reload(true);
-      }, 1000);
-      return;
-    }
-
-    var me = this;
-
     // Clear everything completely
     this.$body.empty().html("");
 
@@ -391,170 +365,135 @@ frappe._active_users.init = function () {
 $(document).ready(function () {
   frappe._active_users.init();
 
-  // Open the dropdown on mouse hover over the users icon
-  $(document).on("mouseenter", ".active-users-navbar-icon", function () {
-    var $dropdown = $(this).closest(".dropdown");
-    if (!$dropdown.hasClass("show")) {
-      $dropdown.addClass("show");
-      $dropdown.find(".dropdown-menu").addClass("show");
+  // ===== Inline modal helpers (centered menus with backdrop) =====
+  function ensureOverlay() {
+    var $ov = $('[data-au-overlay="1"]').first();
+    if (!$ov.length) {
+      $("body").append(
+        '<div data-au-overlay="1" style="position:fixed;inset:0;background:rgba(0,0,0,0.35);visibility:hidden;opacity:0;transition:opacity 120ms ease;z-index:1040;"></div>'
+      );
+      $ov = $('[data-au-overlay="1"]').first();
+    }
+    return $ov;
+  }
+  function showOverlay() {
+    ensureOverlay().css({ visibility: "visible", opacity: "1" });
+  }
+  function hideOverlay() {
+    ensureOverlay().css({ visibility: "hidden", opacity: "0" });
+  }
+  function centerMenu($menu, widthPx) {
+    var w = widthPx || 420;
+    // Clear dropdown positioning that may keep it at top/right
+    $menu.css({ right: "auto", bottom: "auto" });
+    $menu.css({
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      zIndex: 1050,
+      minWidth: w + "px",
+      maxWidth: "90vw",
+      maxHeight: "80vh",
+      overflow: "auto",
+      background: "#fff",
+      border: "1px solid rgba(0,0,0,0.12)",
+      borderRadius: "8px",
+      boxShadow: "0 16px 36px rgba(0,0,0,0.22)",
+      padding: "14px 16px",
+      visibility: "visible",
+      opacity: "1",
+    });
+  }
+  function hideMenu($menu) {
+    $menu.css({ visibility: "hidden", opacity: "0" });
+  }
+  function hideAllMenus() {
+    hideMenu($('[data-au-users-menu="1"], .active_users_menu'));
+    hideOverlay();
+  }
+
+  // Initialize overlay once and bind outside click
+  ensureOverlay().on("click", function () {
+    hideAllMenus();
+  });
+  $(document).on("keydown", function (e) {
+    if (e.key === "Escape") hideAllMenus();
+  });
+
+  // Anchor a small dropdown to a trigger (no overlay)
+  function anchorMenu($trigger, $menu) {
+    var rect = $trigger.get(0).getBoundingClientRect();
+    var top = rect.bottom + 8;
+    var left = Math.min(
+      Math.max(8, rect.left),
+      Math.max(8, window.innerWidth - 360)
+    );
+    $menu.css({
+      position: "fixed",
+      top: top + "px",
+      left: left + "px",
+      transform: "none",
+      zIndex: 1050,
+      minWidth: "240px",
+      maxWidth: "380px",
+      maxHeight: "60vh",
+      overflow: "auto",
+      background: "#fff",
+      border: "1px solid rgba(0,0,0,0.12)",
+      borderRadius: "8px",
+      boxShadow: "0 12px 28px rgba(0,0,0,0.15)",
+      padding: "10px 12px",
+      visibility: "visible",
+      opacity: "1",
+    });
+  }
+
+  // Close on any outside click (no overlay needed for anchored dropdown)
+  $(document).on("click", function () {
+    try {
+      hideAllMenus();
+    } catch (err) {
+      try {
+        console.log("[file.*.vue,*.js] buttonHoverLeave error:", err);
+      } catch (_) {}
     }
   });
-  $(document).on("mouseleave", ".active-users-navbar-item", function () {
-    var $dropdown = $(this);
-    if ($dropdown.hasClass("show")) {
-      $dropdown.removeClass("show");
-      $dropdown.find(".dropdown-menu").removeClass("show");
+  // Prevent close when clicking inside the menus
+  $(document).on(
+    "click",
+    '[data-au-users-menu="1"], .active_users_menu',
+    function (ev) {
+      ev.stopPropagation();
+    }
+  );
+
+  // ===== Toggle users menu on click =====
+  $(document).on("click", '[data-au-user="1"]', function (ev) {
+    try {
+      ev.preventDefault();
+      ev.stopPropagation();
+      var $dropdown = $(this).closest('[data-au-item="1"]');
+      var $menu = $dropdown
+        .find('.active_users_menu, [data-au-users-menu="1"]')
+        .first();
+      var isVisible = $menu.css("visibility") === "visible";
+      hideAllMenus();
+      if (!isVisible) {
+        anchorMenu($(this), $menu);
+        // no overlay for anchored users menu
+      }
+    } catch (err) {
+      try {
+        console.log("[file.*.vue,*.js] buttonHoverLeave error:", err);
+      } catch (_) {}
     }
   });
+
+  // Prevent clicks inside menus from bubbling and closing them
+  $(document).on("click", '[data-au-users-menu="1"]', function (ev) {
+    ev.stopPropagation();
+  });
+
+  // (Removed mouseleave auto-close to avoid premature closing on re-open attempts)
 });
-
-// ===== SECTION: Minimal Ping Monitor (standalone) =====
-(function () {
-  let soundEnabled = false;
-  let errorSound = null;
-  let wasConnectionLost = false;
-  let pingTimer = null;
-
-  function ensurePingElement() {
-    const $item = $(
-      "header.navbar > .container > .navbar-collapse > ul.navbar-nav .active-users-navbar-item"
-    ).first();
-    if (!$item.length) return null;
-    if (!$item.find(".active-users-navbar-ping").length) {
-      const html = `
-            <span class="nav-link active-users-navbar-ping" style="cursor:default;display:inline-block;margin-right:6px;" title="Response (ms)">
-                <span class="fa fa-bolt fa-md fa-fw" style="color:#4caf50;"></span>
-                <span class="active-users-ping-text" style="font-weight:600;color:#4caf50;">000 ms</span>
-            </span>
-      `;
-      const $reload = $item.find(".active-users-navbar-reload").first();
-      if ($reload.length) $reload.after(html);
-      else $item.prepend(html);
-    }
-    return $item;
-  }
-
-  function updatePingUI(ms) {
-    const $item = ensurePingElement();
-    if (!$item) return;
-    const $text = $item.find(".active-users-ping-text").first();
-    const $icon = $item.find(".active-users-navbar-ping .fa-bolt").first();
-    const val = ("" + ms).padStart(3, "0");
-    let color = "#4caf50";
-    const n = parseInt(val, 10);
-    if (n < 100) color = "#4caf50";
-    else if (n < 300) color = "#1976d2";
-    else if (n < 500) color = "#ff9800";
-    else color = "#f44336";
-    if ($text.length) {
-      $text.text(val + " ms").css("color", color);
-    }
-    if ($icon.length) {
-      $icon.css("color", color);
-    }
-  }
-
-  function enableSoundOnce() {
-    if (soundEnabled) return;
-    try {
-      const url =
-        frappe.urllib.get_base_url() + "/assets/active_users/sounds/error.mp3";
-      errorSound = new Audio(url);
-      errorSound.preload = "auto";
-      errorSound
-        .play()
-        .then(() => {
-          errorSound.pause();
-          errorSound.currentTime = 0;
-          soundEnabled = true;
-        })
-        .catch(function () {});
-    } catch (e) {}
-  }
-
-  function playError() {
-    if (!soundEnabled) {
-      enableSoundOnce();
-      setTimeout(playError, 100);
-      return;
-    }
-    try {
-      if (errorSound) {
-        errorSound.currentTime = 0;
-        errorSound.play().catch(function () {});
-      }
-    } catch (e) {}
-  }
-
-  async function measurePingOnce() {
-    const start = performance.now();
-    let responded = false;
-    let timeoutTriggered = false;
-    const timeoutId = setTimeout(function () {
-      if (!responded) {
-        timeoutTriggered = true;
-        updatePingUI(999);
-        playError();
-        wasConnectionLost = true;
-      }
-    }, 5000);
-    try {
-      await frappe.call({
-        method: "frappe.ping",
-        args: {},
-        callback: function () {
-          if (!timeoutTriggered) {
-            responded = true;
-            clearTimeout(timeoutId);
-            const end = performance.now();
-            const ms = Math.round(end - start);
-            updatePingUI(ms);
-            if (wasConnectionLost) {
-              wasConnectionLost = false;
-              if (window.clearCacheAndReload) window.clearCacheAndReload();
-              else location.reload();
-            }
-          }
-        },
-        error: function () {
-          if (!timeoutTriggered) {
-            responded = true;
-            clearTimeout(timeoutId);
-            updatePingUI(999);
-            wasConnectionLost = true;
-          }
-        },
-        freeze: false,
-        show_spinner: false,
-        async: true,
-      });
-    } catch (e) {
-      if (!timeoutTriggered) {
-        updatePingUI(999);
-        playError();
-        wasConnectionLost = true;
-      }
-    }
-  }
-
-  function start() {
-    ensurePingElement();
-    if (pingTimer) return;
-    measurePingOnce();
-    pingTimer = setInterval(measurePingOnce, 5000);
-  }
-
-  // Enable sound on first interaction
-  const _once = function () {
-    enableSoundOnce();
-    document.removeEventListener("click", _once);
-    document.removeEventListener("touchstart", _once);
-  };
-  document.addEventListener("click", _once, { once: true });
-  document.addEventListener("touchstart", _once, { once: true });
-
-  // Start when document ready and Active Users init is done
-  $(document).ready(function () {
-    setTimeout(start, 0);
-  });
-})();
