@@ -8,11 +8,27 @@
  *  Last Updated: 2025-07-10 04:05:00
  */
 
-/* alert("active_users loaded!");*/
-
 // ===== SECTION: Namespaces/Bootstrap =====
 frappe.provide('frappe._active_users');
 frappe.provide('frappe.dom');
+
+// ===== SECTION: Constants =====
+const ACTIVE_USERS_CONSTANTS = {
+	API_METHOD_PREFIX: 'active_users.utils.api.',
+	SETUP_RETRY_DELAY: 300,
+	MIN_REFRESH_INTERVAL: 1,
+	MAX_USERS_DISPLAY: 100,
+	DATA_ATTRIBUTES: {
+		ROOT: 'users-root',
+		ITEM: 'au-item',
+		RELOAD: 'au-reload',
+		USER: 'au-user',
+		MENU: 'au-users-menu',
+		BODY: 'au-users-body',
+		FOOTER: 'au-users-footer',
+		OVERLAY: 'au-overlay',
+	},
+};
 
 // ===== SECTION: Prevent duplicate initialization (destroy old instance if present) =====
 // Force clear any old cached versions
@@ -71,41 +87,78 @@ class ActiveUsers {
 	}
 	error(msg, args) {
 		// If the error is permissions-related, ignore silently
-		if (msg && typeof msg === 'string' && msg.indexOf('permission') !== -1) {
+		if (msg && typeof msg === 'string' && msg.toLowerCase().includes('permission')) {
+			if (frappe.debug_mode) {
+				console.warn('[Active Users] Permission error:', msg);
+			}
 			return;
+		}
+		// Log error for debugging
+		if (frappe.debug_mode) {
+			console.error('[Active Users] Error:', msg, args);
 		}
 		this.destroy();
 		frappe.throw(__(msg, args));
 	}
 	// ===== SECTION: RPC Wrapper =====
 	request(method, callback, type) {
-		var me = this;
+		const me = this;
 		return new Promise(function (resolve, reject) {
-			let data = {
-				method: 'active_users.utils.api.' + method,
+			const data = {
+				method: ACTIVE_USERS_CONSTANTS.API_METHOD_PREFIX + method,
 				async: true,
 				freeze: false,
-				callback: function (res) {
-					if (res && $.isPlainObject(res)) res = res.message || res;
-					if (!$.isPlainObject(res)) {
-						me.error('Active Users plugin received invalid ' + type + '.');
-						reject();
-						return;
+				callback: function (response) {
+					try {
+						// Handle response format
+						let res = response;
+						if (res && $.isPlainObject(res)) {
+							res = res.message || res;
+						}
+
+						// Validate response structure
+						if (!$.isPlainObject(res)) {
+							const errorMsg = __('Active Users plugin received invalid {0}.', [
+								type,
+							]);
+							me.error(errorMsg);
+							reject(new Error(errorMsg));
+							return;
+						}
+
+						// Check for API errors
+						if (res.error) {
+							const errorMsg =
+								res.message ||
+								__('An error occurred while processing the request.');
+							me.error(errorMsg);
+							reject(new Error(errorMsg));
+							return;
+						}
+
+						// Execute callback if provided
+						const result = callback && callback.call(me, res);
+						resolve(result !== undefined ? result : res);
+					} catch (e) {
+						const errorMsg = __('Error processing response: {0}', [e.message]);
+						if (frappe.debug_mode) {
+							console.error('[Active Users] Response processing error:', e);
+						}
+						me.error(errorMsg);
+						reject(e);
 					}
-					if (res.error) {
-						me.error(res.message);
-						reject();
-						return;
-					}
-					let val = callback && callback.call(me, res);
-					resolve(val || res);
 				},
 			};
+
 			try {
 				frappe.call(data);
 			} catch (e) {
-				this.error('An error has occurred while sending a request.');
-				reject();
+				const errorMsg = __('An error occurred while sending a request.');
+				if (frappe.debug_mode) {
+					console.error('[Active Users] Request error:', e);
+				}
+				me.error(errorMsg);
+				reject(e);
 			}
 		});
 	}
@@ -114,86 +167,140 @@ class ActiveUsers {
 		// Always render the red reload icon for all users
 		this.setup_display();
 		if (!this.is_online) {
+			if (frappe.debug_mode) {
+				console.warn('[Active Users] Application is offline');
+			}
 			return;
 		}
-		var me = this;
+
 		this.sync_settings()
-			.then(function () {
+			.then((settings) => {
 				// Load data only if user is authorized
-				if (!me.settings.enabled) return;
-				// Also skip if there was a permissions error
-				if (me.settings && me.settings.error) return;
-				Promise.resolve().then(function () {
-					me.sync_reload();
-				});
+				if (!this.settings.enabled) {
+					if (frappe.debug_mode) {
+						console.log('[Active Users] Feature is disabled');
+					}
+					return;
+				}
+
+				// Skip if there was a permissions error
+				if (this.settings && this.settings.error) {
+					if (frappe.debug_mode) {
+						console.warn('[Active Users] Settings error:', this.settings.error);
+					}
+					return;
+				}
+
+				// Initialize sync
+				this.sync_reload();
 			})
-			.catch(function () {
+			.catch((error) => {
 				// On permissions error, do nothing (no UI and no message)
-				return;
+				if (frappe.debug_mode) {
+					console.error('[Active Users] Setup error:', error);
+				}
 			});
 	}
 	// ===== SECTION: Settings sync =====
 	sync_settings() {
 		return this.request(
 			'get_settings',
-			function (res) {
-				res.enabled = cint(res.enabled);
-				res.refresh_interval = cint(res.refresh_interval) * 60000;
-				this.settings = res;
+			(res) => {
+				// Validate and normalize settings
+				const enabled = cint(res.enabled);
+				let refreshInterval = cint(res.refresh_interval);
+
+				// Ensure minimum refresh interval
+				if (refreshInterval < ACTIVE_USERS_CONSTANTS.MIN_REFRESH_INTERVAL) {
+					refreshInterval = ACTIVE_USERS_CONSTANTS.MIN_REFRESH_INTERVAL;
+				}
+
+				// Convert to milliseconds
+				refreshInterval = refreshInterval * 60000;
+
+				this.settings = {
+					enabled: enabled,
+					refresh_interval: refreshInterval,
+				};
+
+				if (frappe.debug_mode) {
+					console.log('[Active Users] Settings loaded:', this.settings);
+				}
 			},
 			'settings',
 		);
 	}
 	// ===== SECTION: Navbar UI (reload icon, users dropdown) =====
 	setup_display() {
-		let title = __('Active Users');
+		const title = __('Active Users');
+		const rootSelector = `li[data-${ACTIVE_USERS_CONSTANTS.DATA_ATTRIBUTES.ROOT}]`;
+		const itemSelector = `li[data-${ACTIVE_USERS_CONSTANTS.DATA_ATTRIBUTES.ITEM}="1"]`;
+
 		// If the navbar item already exists, reuse it
 		const $existing = $(
-			"header.navbar .navbar-collapse ul.navbar-nav li[data-au='users-root'], header.navbar .navbar-collapse ul.navbar-nav li[data-au-item='1']",
+			`header.navbar .navbar-collapse ul.navbar-nav ${rootSelector}, header.navbar .navbar-collapse ul.navbar-nav ${itemSelector}`,
 		).first();
 		if ($existing.length) {
 			this.$app = $existing;
 		} else {
 			// Find a robust navbar target
-			let $nav = $('header.navbar .navbar-collapse ul.navbar-nav').first();
+			const $nav = $('header.navbar .navbar-collapse ul.navbar-nav').first();
 			// If navbar not yet in DOM, retry shortly
 			if (!$nav.length) {
-				setTimeout(() => this.setup_display(), 300);
+				setTimeout(() => this.setup_display(), ACTIVE_USERS_CONSTANTS.SETUP_RETRY_DELAY);
 				return;
 			}
+			const attrs = ACTIVE_USERS_CONSTANTS.DATA_ATTRIBUTES;
 			this.$app = $(
-				`
-            <li data-au="users-root" data-au-item="1" title="${title}" style="list-style:none; position:relative;">
-                <span class="reload_icon" data-au-reload="1" title="Reload" style="cursor:pointer;display:inline-block;margin-right:6px;">
-                    <span class="fa fa-refresh fa-md fa-fw" style="color:#e74c3c;"></span>
-                </span>
-                <a data-au-user="1" href="#" onclick="return false;" aria-haspopup="true" aria-expanded="true" data-persist="true" title="${title}" style="display:inline-block;">
-                    <span class="fa fa-user fa-lg fa-fw"></span>
-                </a>
-                <div class="active_users_menu" data-au-users-menu="1" role="menu" style="position:absolute; right:0; top:100%; min-width:260px; background:#fff; border:1px solid rgba(0,0,0,0.15); border-radius:8px; padding:10px 12px; display:block; visibility:hidden;">
-                    <div style="width:100%;">
-                        <div data-au-users-body="1"></div>
-                    </div>
-                    <div style="width:100%; margin-top:6px;">
-                        <div>
-                            <div data-au-users-footer="1" style="padding:4px 6px; color:#2c3e50;">المستخدمين النشطين</div>
-                        </div>
-                    </div>
-                </div>
-            </li>
-        `,
+				`<li data-${attrs.ROOT} data-${
+					attrs.ITEM
+				}="1" title="${title}" style="list-style:none; position:relative;">
+					<span class="reload_icon" data-${attrs.RELOAD}="1" title="${__(
+					'Reload',
+				)}" style="cursor:pointer;display:inline-block;margin-right:6px;">
+						<span class="fa fa-refresh fa-md fa-fw" style="color:#e74c3c;"></span>
+					</span>
+					<a data-${
+						attrs.USER
+					}="1" href="#" onclick="return false;" aria-haspopup="true" aria-expanded="true" data-persist="true" title="${title}" style="display:inline-block;">
+						<span class="fa fa-user fa-lg fa-fw"></span>
+					</a>
+					<div class="active_users_menu" data-${
+						attrs.MENU
+					}="1" role="menu" style="position:absolute; right:0; top:100%; min-width:260px; background:#fff; border:1px solid rgba(0,0,0,0.15); border-radius:8px; padding:10px 12px; display:block; visibility:hidden;">
+						<div style="width:100%;">
+							<div data-${attrs.BODY}="1"></div>
+						</div>
+						<div style="width:100%; margin-top:6px;">
+							<div>
+								<div data-${attrs.FOOTER}="1" style="padding:4px 6px; color:#2c3e50;">${__(
+					'المستخدمين النشطين',
+				)}</div>
+							</div>
+						</div>
+					</div>
+				</li>`,
 			);
 			$nav.prepend(this.$app.get(0));
 		}
-		this.$body = this.$app.find('[data-au-users-body="1"]').first();
+
+		const attrs = ACTIVE_USERS_CONSTANTS.DATA_ATTRIBUTES;
+		this.$body = this.$app.find(`[data-${attrs.BODY}="1"]`).first();
 		this.$loading = this.$body.find('.active-users-list-loading').first().hide();
-		this.$footer = this.$app.find('[data-au-users-footer="1"]').first();
+		this.$footer = this.$app.find(`[data-${attrs.FOOTER}="1"]`).first();
 		this.$reload = null;
 
 		// Re-bind click handler on the top red reload icon
-		this.$app.find('[data-au-reload="1"]').on('click', () => {
-			window.clearCacheAndReload();
-		});
+		this.$app
+			.find(`[data-${attrs.RELOAD}="1"]`)
+			.off('click')
+			.on('click', () => {
+				if (window.clearCacheAndReload) {
+					window.clearCacheAndReload();
+				} else {
+					location.reload();
+				}
+			});
 	}
 	// ===== SECTION: Sync (reload + interval) =====
 	sync_reload() {
@@ -215,107 +322,183 @@ class ActiveUsers {
 		}
 	}
 	sync_data() {
+		// Prevent concurrent syncs
+		if (this._syncing) {
+			if (frappe.debug_mode) {
+				console.warn('[Active Users] Sync already in progress');
+			}
+			return;
+		}
+
 		this._syncing = true;
-		if (this.data.length) {
+
+		// Clear previous data
+		if (this.data && this.data.length) {
 			this.$footer.html('');
 			this.$body.empty();
 		}
+
 		// Remove loading animation that might be leftover
 		this.$body.find('.active-users-list-loading').remove();
 
 		this.request(
 			'get_users',
-			function (res) {
-				if (res && res.error) {
-					this.$body.html(
-						'<div class="text-danger" style="padding: 20px; text-align: center;">خطأ في الخادم</div>',
-					);
-					return;
-				}
+			(res) => {
+				try {
+					// Validate response
+					if (res && res.error) {
+						const errorMsg = res.message || __('خطأ في الخادم');
+						this.$body.html(
+							`<div class="text-danger" style="padding: 20px; text-align: center;">${errorMsg}</div>`,
+						);
+						this._syncing = null;
+						return;
+					}
 
-				this.data = res && res.users && Array.isArray(res.users) ? res.users : [];
-				this.update_list();
-				this._syncing = null;
+					// Process users data
+					const users = res && res.users && Array.isArray(res.users) ? res.users : [];
+
+					// Limit display to max users
+					this.data = users.slice(0, ACTIVE_USERS_CONSTANTS.MAX_USERS_DISPLAY);
+
+					this.update_list();
+					this._syncing = null;
+
+					if (frappe.debug_mode) {
+						console.log(`[Active Users] Loaded ${this.data.length} users`);
+					}
+				} catch (error) {
+					if (frappe.debug_mode) {
+						console.error('[Active Users] Error processing users data:', error);
+					}
+					this.$body.html(
+						`<div class="text-danger" style="padding: 20px; text-align: center;">${__(
+							'فشل في تحميل البيانات',
+						)}</div>`,
+					);
+					this._syncing = null;
+				}
 			},
 			'users list',
 		).catch((err) => {
+			if (frappe.debug_mode) {
+				console.error('[Active Users] Failed to load users:', err);
+			}
 			this.$body.html(
-				'<div class="text-danger" style="padding: 20px; text-align: center;">فشل في تحميل البيانات</div>',
+				`<div class="text-danger" style="padding: 20px; text-align: center;">${__(
+					'فشل في تحميل البيانات',
+				)}</div>`,
 			);
+			this._syncing = null;
 		});
 	}
 	// ===== SECTION: Interval setup =====
 	setup_sync() {
-		var me = this;
-		this.sync_timer = window.setInterval(function () {
-			me.sync_data();
-		}, this.settings.refresh_interval);
+		// Clear existing timer if any
+		this.clear_sync();
+
+		// Validate refresh interval
+		const interval =
+			this.settings.refresh_interval || ACTIVE_USERS_CONSTANTS.MIN_REFRESH_INTERVAL * 60000;
+
+		this.sync_timer = window.setInterval(() => {
+			if (this.is_online) {
+				this.sync_data();
+			}
+		}, interval);
+
+		if (frappe.debug_mode) {
+			console.log(`[Active Users] Auto-refresh interval set to ${interval / 60000} minutes`);
+		}
 	}
 	// ===== SECTION: Settings refresh entry =====
 	update_settings() {
 		if (!this.is_online) {
+			if (frappe.debug_mode) {
+				console.warn('[Active Users] Cannot update settings while offline');
+			}
 			return;
 		}
-		var me = this;
-		this.sync_settings().then(function () {
-			if (!me.settings.enabled) {
-				me.destroy();
-				return;
-			}
-			Promise.resolve().then(function () {
-				me.sync_reload();
+
+		this.sync_settings()
+			.then(() => {
+				if (!this.settings.enabled) {
+					this.destroy();
+					return;
+				}
+
+				// Reload with new settings
+				this.sync_reload();
+			})
+			.catch((error) => {
+				if (frappe.debug_mode) {
+					console.error('[Active Users] Failed to update settings:', error);
+				}
 			});
-		});
 	}
 	// ===== SECTION: Render users list =====
 	update_list() {
 		// Clear everything completely
-		this.$body.empty().html('');
+		this.$body.empty();
 
 		if (!this.data || !this.data.length) {
+			const emptyMsg = __('لا توجد مستخدمين نشطين');
 			this.$body.html(
-				'<div class="text-center" style="padding: 30px; color: #666;">لا توجد مستخدمين نشطين</div>',
+				`<div class="text-center" style="padding: 30px; color: #666;">${emptyMsg}</div>`,
 			);
 			this.$footer.html('');
 			return;
 		}
 
-		// Build complete table HTML
-		let tableHTML = `
-            <div style="border: 1px solid #ddd; border-radius: 4px; overflow: hidden;">
-                <div style="background: #f5f5f5; padding: 12px; border-bottom: 1px solid #ddd; font-weight: bold; display: flex;">
-                    <div style="flex: 1; text-align: left; color: #333;">الاسم</div>
-                    <div style="flex: 1; text-align: right; color: #333;">آخر نشاط</div>
-                </div>
-        `;
+		try {
+			// Build complete table HTML
+			let tableHTML = `
+				<div style="border: 1px solid #ddd; border-radius: 4px; overflow: hidden;">
+					<div style="background: #f5f5f5; padding: 12px; border-bottom: 1px solid #ddd; font-weight: bold; display: flex;">
+						<div style="flex: 1; text-align: left; color: #333;">${__('الاسم')}</div>
+						<div style="flex: 1; text-align: right; color: #333;">${__('آخر نشاط')}</div>
+					</div>
+			`;
 
-		this.data.forEach(function (user, index) {
-			let firstName = user.first_name || 'غير محدد';
-			let lastActive = user.last_active || 'غير محدد';
+			this.data.forEach((user, index) => {
+				const firstName = frappe.utils.escape_html(user.first_name || __('غير محدد'));
+				let lastActive = user.last_active || __('غير محدد');
 
-			// Format date if it's a valid date string
-			if (lastActive !== 'غير محدد' && typeof lastActive === 'string') {
-				try {
-					lastActive = frappe.datetime.str_to_user(lastActive);
-				} catch (e) {
-					// Date formatting failed, keep original value
+				// Format date if it's a valid date string
+				if (lastActive !== __('غير محدد') && typeof lastActive === 'string') {
+					try {
+						lastActive = frappe.datetime.str_to_user(lastActive);
+					} catch (e) {
+						// Date formatting failed, keep original value
+						if (frappe.debug_mode) {
+							console.warn('[Active Users] Date formatting failed:', lastActive);
+						}
+					}
 				}
+
+				const rowStyle = index % 2 === 0 ? 'background: #fafafa;' : '';
+				tableHTML += `
+					<div style="display: flex; padding: 10px 12px; border-bottom: 1px solid #f0f0f0; ${rowStyle}">
+						<div style="flex: 1; text-align: left; font-weight: 500; color: #2c3e50;">${firstName}</div>
+						<div style="flex: 1; text-align: right; color: #7f8c8d; font-size: 14px;">${lastActive}</div>
+					</div>
+				`;
+			});
+
+			tableHTML += '</div>';
+
+			this.$body.html(tableHTML);
+			this.$footer.html(__('المستخدمين النشطين'));
+		} catch (error) {
+			if (frappe.debug_mode) {
+				console.error('[Active Users] Error rendering users list:', error);
 			}
-
-			tableHTML += `
-                <div style="display: flex; padding: 10px 12px; border-bottom: 1px solid #f0f0f0; ${
-					index % 2 === 0 ? 'background: #fafafa;' : ''
-				}">
-                    <div style="flex: 1; text-align: left; font-weight: 500; color: #2c3e50;">${firstName}</div>
-                    <div style="flex: 1; text-align: right; color: #7f8c8d; font-size: 14px;">${lastActive}</div>
-                </div>
-            `;
-		});
-
-		tableHTML += '</div>';
-
-		this.$body.html(tableHTML);
-		this.$footer.html('المستخدمين النشطين');
+			this.$body.html(
+				`<div class="text-danger" style="padding: 20px; text-align: center;">${__(
+					'خطأ في عرض البيانات',
+				)}</div>`,
+			);
+		}
 	}
 }
 
@@ -342,13 +525,14 @@ $(document).ready(function () {
 	frappe._active_users.init();
 
 	// ===== Inline modal helpers (centered menus with backdrop) =====
+	const overlayAttr = ACTIVE_USERS_CONSTANTS.DATA_ATTRIBUTES.OVERLAY;
 	function ensureOverlay() {
-		var $ov = $('[data-au-overlay="1"]').first();
+		let $ov = $(`[data-${overlayAttr}="1"]`).first();
 		if (!$ov.length) {
 			$('body').append(
-				'<div data-au-overlay="1" style="position:fixed;inset:0;background:rgba(0,0,0,0.35);visibility:hidden;opacity:0;transition:opacity 120ms ease;z-index:1040;"></div>',
+				`<div data-${overlayAttr}="1" style="position:fixed;inset:0;background:rgba(0,0,0,0.35);visibility:hidden;opacity:0;transition:opacity 120ms ease;z-index:1040;"></div>`,
 			);
-			$ov = $('[data-au-overlay="1"]').first();
+			$ov = $(`[data-${overlayAttr}="1"]`).first();
 		}
 		return $ov;
 	}
@@ -385,7 +569,8 @@ $(document).ready(function () {
 		$menu.css({ visibility: 'hidden', opacity: '0' });
 	}
 	function hideAllMenus() {
-		hideMenu($('[data-au-users-menu="1"], .active_users_menu'));
+		const menuAttr = ACTIVE_USERS_CONSTANTS.DATA_ATTRIBUTES.MENU;
+		hideMenu($(`[data-${menuAttr}="1"], .active_users_menu`));
 		hideOverlay();
 	}
 
@@ -423,43 +608,63 @@ $(document).ready(function () {
 	}
 
 	// Close on any outside click (no overlay needed for anchored dropdown)
-	$(document).on('click', function () {
+	$(document).on('click', function (ev) {
 		try {
+			// Don't close if clicking on the trigger or menu
+			const attrs = ACTIVE_USERS_CONSTANTS.DATA_ATTRIBUTES;
+			const $target = $(ev.target);
+			if (
+				$target.closest(`[data-${attrs.USER}="1"]`).length ||
+				$target.closest(`[data-${attrs.MENU}="1"]`).length ||
+				$target.closest('.active_users_menu').length
+			) {
+				return;
+			}
 			hideAllMenus();
 		} catch (err) {
-			try {
-				console.log('[file.*.vue,*.js] buttonHoverLeave error:', err);
-			} catch (_) {}
+			if (frappe.debug_mode) {
+				console.error('[Active Users] Error handling document click:', err);
+			}
 		}
 	});
+
 	// Prevent close when clicking inside the menus
-	$(document).on('click', '[data-au-users-menu="1"], .active_users_menu', function (ev) {
+	const menuAttr = ACTIVE_USERS_CONSTANTS.DATA_ATTRIBUTES.MENU;
+	$(document).on('click', `[data-${menuAttr}="1"], .active_users_menu`, function (ev) {
 		ev.stopPropagation();
 	});
 
 	// ===== Toggle users menu on click =====
-	$(document).on('click', '[data-au-user="1"]', function (ev) {
+	const userAttr = ACTIVE_USERS_CONSTANTS.DATA_ATTRIBUTES.USER;
+	const itemAttr = ACTIVE_USERS_CONSTANTS.DATA_ATTRIBUTES.ITEM;
+	$(document).on('click', `[data-${userAttr}="1"]`, function (ev) {
 		try {
 			ev.preventDefault();
 			ev.stopPropagation();
-			var $dropdown = $(this).closest('[data-au-item="1"]');
-			var $menu = $dropdown.find('.active_users_menu, [data-au-users-menu="1"]').first();
-			var isVisible = $menu.css('visibility') === 'visible';
+
+			const $trigger = $(this);
+			const $dropdown = $trigger.closest(`[data-${itemAttr}="1"]`);
+			const $menu = $dropdown.find(`.active_users_menu, [data-${menuAttr}="1"]`).first();
+
+			if (!$menu.length) {
+				if (frappe.debug_mode) {
+					console.warn('[Active Users] Menu not found');
+				}
+				return;
+			}
+
+			const isVisible = $menu.css('visibility') === 'visible';
 			hideAllMenus();
+
 			if (!isVisible) {
-				anchorMenu($(this), $menu);
+				anchorMenu($trigger, $menu);
 				// no overlay for anchored users menu
 			}
 		} catch (err) {
-			try {
-				console.log('[file.*.vue,*.js] buttonHoverLeave error:', err);
-			} catch (_) {}
+			if (frappe.debug_mode) {
+				console.error('[Active Users] Error toggling menu:', err);
+			}
 		}
-	});
-
-	// Prevent clicks inside menus from bubbling and closing them
-	$(document).on('click', '[data-au-users-menu="1"]', function (ev) {
-		ev.stopPropagation();
 	});
 
 	// (Removed mouseleave auto-close to avoid premature closing on re-open attempts)
