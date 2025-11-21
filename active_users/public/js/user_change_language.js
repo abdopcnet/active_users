@@ -40,7 +40,7 @@ frappe.ui.form.on('User', {
 							indicator: 'red',
 						});
 					}
-				});
+				}).addClass('btn-danger');
 			} else if (current_language === 'ar') {
 				frm.add_custom_button(__('Change to English'), function () {
 					try {
@@ -72,7 +72,7 @@ frappe.ui.form.on('User', {
 							indicator: 'red',
 						});
 					}
-				});
+				}).addClass('btn-danger');
 			}
 
 			// Reset dirty flag after all refresh events complete
