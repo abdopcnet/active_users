@@ -1,0 +1,175 @@
+/*
+ *  Frappe Active Users © 2025
+ *  Author:  future_support
+ *  Company: Level Up Marketing & Software Development Services
+ *  Licence: Please refer to LICENSE file
+ *  Version: 2.0.0 - Table View Only (No Avatars)
+ */
+
+/* Active Users Navbar Item */
+[data-au='users-root'],
+[data-au-item='1'] {
+	list-style: none;
+	position: relative;
+}
+
+[data-au='users-root'] .reload_icon,
+[data-au-reload='1'] {
+	cursor: pointer;
+	display: inline-block;
+	margin-right: 6px;
+}
+
+[data-au='users-root'] .reload_icon .fa-refresh {
+	color: #e74c3c;
+}
+
+[data-au='users-root'] .reload_icon:hover .fa-refresh {
+	color: #c0392b;
+}
+
+/* Active Users Menu */
+.active_users_menu,
+[data-au-users-menu='1'] {
+	position: absolute;
+	right: 0;
+	top: 100%;
+	min-width: 260px;
+	background: #fff;
+	border: 1px solid rgba(0, 0, 0, 0.15);
+	border-radius: 8px;
+	padding: 10px 12px;
+	display: block;
+	visibility: hidden;
+	opacity: 0;
+	transition: opacity 0.2s ease, visibility 0.2s ease;
+	z-index: 1050;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.active_users_menu.visible,
+[data-au-users-menu='1'].visible {
+	visibility: visible;
+	opacity: 1;
+}
+
+/* Active Users List */
+[data-au-users-body='1'] {
+	width: 100%;
+}
+
+[data-au-users-body='1'] .active-users-table {
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	overflow: hidden;
+}
+
+[data-au-users-body='1'] .active-users-header {
+	background: #f5f5f5;
+	padding: 12px;
+	border-bottom: 1px solid #ddd;
+	font-weight: bold;
+	display: flex;
+}
+
+[data-au-users-body='1'] .active-users-header > div {
+	flex: 1;
+	color: #333;
+}
+
+[data-au-users-body='1'] .active-users-header .header-name {
+	text-align: left;
+}
+
+[data-au-users-body='1'] .active-users-header .header-activity {
+	text-align: right;
+}
+
+[data-au-users-body='1'] .active-users-row {
+	display: flex;
+	padding: 10px 12px;
+	border-bottom: 1px solid #f0f0f0;
+}
+
+[data-au-users-body='1'] .active-users-row:nth-child(even) {
+	background: #fafafa;
+}
+
+[data-au-users-body='1'] .active-users-row:last-child {
+	border-bottom: none;
+}
+
+[data-au-users-body='1'] .active-users-row > div {
+	flex: 1;
+}
+
+[data-au-users-body='1'] .active-users-name {
+	text-align: left;
+	font-weight: 500;
+	color: #2c3e50;
+}
+
+[data-au-users-body='1'] .active-users-activity {
+	text-align: right;
+	color: #7f8c8d;
+	font-size: 14px;
+}
+
+/* Active Users Footer */
+[data-au-users-footer='1'] {
+	padding: 4px 6px;
+	color: #2c3e50;
+	font-size: 12px;
+	text-align: center;
+	margin-top: 6px;
+}
+
+/* Loading State */
+.active-users-list-loading {
+	padding: 20px;
+	text-align: center;
+	color: #666;
+}
+
+.active-users-list-loading .fa-spin {
+	margin-right: 8px;
+}
+
+/* Empty State */
+.active-users-empty {
+	padding: 30px;
+	text-align: center;
+	color: #666;
+}
+
+/* Error State */
+.active-users-error {
+	padding: 20px;
+	text-align: center;
+	color: #e74c3c;
+}
+
+/* Overlay */
+[data-au-overlay='1'] {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.35);
+	visibility: hidden;
+	opacity: 0;
+	transition: opacity 120ms ease;
+	z-index: 1040;
+}
+
+[data-au-overlay='1'].visible {
+	visibility: visible;
+	opacity: 1;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+	.active_users_menu,
+	[data-au-users-menu='1'] {
+		min-width: 240px;
+		max-width: 90vw;
+	}
+}
