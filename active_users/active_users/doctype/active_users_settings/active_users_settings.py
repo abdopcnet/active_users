@@ -3,9 +3,15 @@
 # Company: Level Up Marketing & Software Development Services
 # Licence: Please refer to LICENSE file
 
-
+import frappe
 from frappe.model.document import Document
 
 class ActiveUsersSettings(Document):
     def before_save(self):
-        pass
+        # Set default values if not set
+        if not self.user:
+            self.user = "Administrator"
+        if self.refresh_interval is None or self.refresh_interval == 0:
+            self.refresh_interval = 5
+        if self.logger is None:
+            self.logger = 1
