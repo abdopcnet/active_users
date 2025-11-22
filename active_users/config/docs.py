@@ -4,10 +4,15 @@
 # Licence: Please refer to license.txt
 
 
+import frappe
+
 """
 Configuration for docs
 """
 
 
 def get_context(context):
-    context.brand_html = "Active Users"
+    try:
+        context.brand_html = "Active Users"
+    except Exception as e:
+        frappe.log_error(f"[docs.py] get_context: {str(e)}", "Active Users")
