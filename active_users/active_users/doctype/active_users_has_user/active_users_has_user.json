@@ -1,13 +1,8 @@
 {
  "actions": [],
- "allow_copy": 1,
- "allow_import": 1,
- "editable_grid": 1,
- "autoname": "hash",
- "creation": "2022-04-04 04:04:04.119400",
- "description": "Active users user visibility",
+ "creation": "2025-11-22 00:00:00.000000",
  "doctype": "DocType",
- "document_type": "Document",
+ "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "user"
@@ -16,18 +11,15 @@
   {
    "fieldname": "user",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "User",
    "options": "User",
-   "reqd": 1,
-   "bold": 1,
-   "in_list_view": 1,
-   "allow_in_quick_entry": 1,
-   "ignore_user_permissions": 1
+   "reqd": 1
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2022-04-04 04:04:04.119400",
+ "modified": "2025-11-22 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Active Users",
  "name": "Active Users Has User",
@@ -35,6 +27,6 @@
  "permissions": [],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": [],
  "track_changes": 1
 }
+
