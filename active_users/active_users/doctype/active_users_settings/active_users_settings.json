@@ -8,11 +8,10 @@
  "field_order": [
   "info_section",
   "enabled",
+  "user",
   "info_column",
   "refresh_interval",
-  "visibility_section",
-  "users",
-  "visibility_column"
+  "logger"
  ],
  "fields": [
   {
@@ -41,26 +40,24 @@
    "reqd": 1
   },
   {
-   "fieldname": "visibility_section",
-   "fieldtype": "Section Break",
-   "label": "Visibility"
+   "default": "1",
+   "description": "If enabled, logs will be written to Error Log",
+   "fieldname": "logger",
+   "fieldtype": "Check",
+   "label": "Enable Logging"
   },
   {
-   "fieldname": "users",
-   "fieldtype": "Table MultiSelect",
-   "label": "Users",
-   "options": "Active Users Has User",
-   "read_only_depends_on": "eval:!doc.enabled"
-  },
-  {
-   "fieldname": "visibility_column",
-   "fieldtype": "Column Break"
+   "default": "Administrator",
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User"
   }
  ],
  "icon": "fa fa-cog",
  "issingle": 1,
  "links": [],
- "modified": "2025-07-09 17:11:55.788762",
+ "modified": "2025-11-22 03:46:12.242168",
  "modified_by": "Administrator",
  "module": "Active Users",
  "name": "Active Users Settings",
