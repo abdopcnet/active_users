@@ -15,5 +15,4 @@ app_license = "MIT"
 doctype_js = {"User": "public/js/user_change_language.js"}
 doctype_list_js = {"User": "public/js/user_bulk_enable_disable.js"}
 
-app_include_css = "active_users/css/active_users_bundle.css"
-app_include_js = "active_users/js/active_users_bundle.js"
+app_include_js = "assets/active_users/js/active_users_bundle.js"
