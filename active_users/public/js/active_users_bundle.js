@@ -100,7 +100,7 @@ class ActiveUsers {
     var me = this;
     return new Promise(function (resolve, reject) {
       let data = {
-        method: "active_users.utils.api." + method,
+        method: "active_users.api." + method,
         async: true,
         freeze: false,
         callback: function (res) {
@@ -122,6 +122,7 @@ class ActiveUsers {
       try {
         frappe.call(data);
       } catch (e) {
+        console.log("[active_users_bundle.js] request error:", e.message || e);
         this.error("An error has occurred while sending a request.");
         reject();
       }
@@ -146,7 +147,7 @@ class ActiveUsers {
           me.sync_reload();
         });
       })
-      .catch(function () {
+      .catch(function (error) {
         // On permissions error, do nothing (no UI and no message)
         return;
       });
@@ -262,6 +263,7 @@ class ActiveUsers {
       },
       "users list"
     ).catch((err) => {
+      console.log("[active_users_bundle.js] sync_data error:", err.message || err);
       this.$body.html(
         '<div class="text-danger" style="padding: 20px; text-align: center;">فشل في تحميل البيانات</div>'
       );
