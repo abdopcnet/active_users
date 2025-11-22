@@ -29,6 +29,7 @@ frappe.listview_settings['User'] = {
 								});
 							} catch (error) {
 								errorCount++;
+								console.log(`[user_bulk_enable_disable.js] enableUser error: ${row.name}`, error);
 								if (frappe.debug_mode) {
 									console.error(
 										`[User Bulk] Failed to enable ${row.name}:`,
@@ -58,6 +59,7 @@ frappe.listview_settings['User'] = {
 
 						listview.refresh();
 					} catch (error) {
+						console.log("[user_bulk_enable_disable.js] enableUsers error:", error);
 						if (frappe.debug_mode) {
 							console.error('[User Bulk] Error in enableUsers:', error);
 						}
@@ -110,6 +112,7 @@ frappe.listview_settings['User'] = {
 								});
 							} catch (error) {
 								errorCount++;
+								console.log(`[user_bulk_enable_disable.js] disableUser error: ${row.name}`, error);
 								if (frappe.debug_mode) {
 									console.error(
 										`[User Bulk] Failed to disable ${row.name}:`,
@@ -139,6 +142,7 @@ frappe.listview_settings['User'] = {
 
 						listview.refresh();
 					} catch (error) {
+						console.log("[user_bulk_enable_disable.js] disableUsers error:", error);
 						if (frappe.debug_mode) {
 							console.error('[User Bulk] Error in disableUsers:', error);
 						}
@@ -202,6 +206,7 @@ frappe.listview_settings['User'] = {
 											successCount++;
 										} catch (error) {
 											errorCount++;
+											console.log(`[user_bulk_enable_disable.js] disableAll error: ${user.name}`, error);
 											if (frappe.debug_mode) {
 												console.error(
 													`[User Bulk] Failed to disable ${user.name}:`,
@@ -231,6 +236,7 @@ frappe.listview_settings['User'] = {
 
 									listview.refresh();
 								} catch (error) {
+									console.log("[user_bulk_enable_disable.js] disableAll callback error:", error);
 									if (frappe.debug_mode) {
 										console.error('[User Bulk] Error in Disable All:', error);
 									}
@@ -241,6 +247,7 @@ frappe.listview_settings['User'] = {
 								}
 							},
 							error: function (error) {
+								console.log("[user_bulk_enable_disable.js] fetchUsers error:", error);
 								if (frappe.debug_mode) {
 									console.error('[User Bulk] Error fetching users:', error);
 								}
