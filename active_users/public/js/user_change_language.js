@@ -23,6 +23,7 @@ frappe.ui.form.on('User', {
 								frappe.set_route('Form', 'User', frm.doc.name);
 							})
 							.catch((error) => {
+								console.log("[user_change_language.js] saveLanguage error:", error);
 								if (frappe.debug_mode) {
 									console.error('[User Language] Failed to save:', error);
 								}
@@ -32,6 +33,7 @@ frappe.ui.form.on('User', {
 								});
 							});
 					} catch (error) {
+						console.log("[user_change_language.js] changeLanguage error:", error);
 						if (frappe.debug_mode) {
 							console.error('[User Language] Error changing language:', error);
 						}
@@ -55,6 +57,7 @@ frappe.ui.form.on('User', {
 								frappe.set_route('Form', 'User', frm.doc.name);
 							})
 							.catch((error) => {
+								console.log("[user_change_language.js] saveLanguage error:", error);
 								if (frappe.debug_mode) {
 									console.error('[User Language] Failed to save:', error);
 								}
@@ -64,6 +67,7 @@ frappe.ui.form.on('User', {
 								});
 							});
 					} catch (error) {
+						console.log("[user_change_language.js] changeLanguage error:", error);
 						if (frappe.debug_mode) {
 							console.error('[User Language] Error changing language:', error);
 						}
@@ -90,6 +94,7 @@ frappe.ui.form.on('User', {
 				}
 			}, 100);
 		} catch (error) {
+			console.log("[user_change_language.js] refresh error:", error);
 			if (frappe.debug_mode) {
 				console.error('[User Language] Error in refresh handler:', error);
 			}
