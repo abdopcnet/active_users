@@ -15,4 +15,4 @@ def get_context(context):
     try:
         context.brand_html = "Active Users"
     except Exception as e:
-        frappe.log_error(f"[docs.py] get_context: {str(e)}", "Active Users")
+        frappe.log_error(f"[docs.py] get_context: {str(e)}")
