@@ -23,20 +23,14 @@ frappe.ui.form.on('User', {
 								frappe.set_route('Form', 'User', frm.doc.name);
 							})
 							.catch((error) => {
-								console.log("[user_change_language.js] saveLanguage error:", error);
-								if (frappe.debug_mode) {
-									console.error('[User Language] Failed to save:', error);
-								}
+								console.log("[user_change_language.js] saveLanguage");
 								frappe.show_alert({
 									message: __('Failed to change language'),
 									indicator: 'red',
 								});
 							});
 					} catch (error) {
-						console.log("[user_change_language.js] changeLanguage error:", error);
-						if (frappe.debug_mode) {
-							console.error('[User Language] Error changing language:', error);
-						}
+						console.log("[user_change_language.js] changeLanguage");
 						frappe.show_alert({
 							message: __('An error occurred while changing language'),
 							indicator: 'red',
@@ -57,20 +51,14 @@ frappe.ui.form.on('User', {
 								frappe.set_route('Form', 'User', frm.doc.name);
 							})
 							.catch((error) => {
-								console.log("[user_change_language.js] saveLanguage error:", error);
-								if (frappe.debug_mode) {
-									console.error('[User Language] Failed to save:', error);
-								}
+								console.log("[user_change_language.js] saveLanguage");
 								frappe.show_alert({
 									message: __('Failed to change language'),
 									indicator: 'red',
 								});
 							});
 					} catch (error) {
-						console.log("[user_change_language.js] changeLanguage error:", error);
-						if (frappe.debug_mode) {
-							console.error('[User Language] Error changing language:', error);
-						}
+						console.log("[user_change_language.js] changeLanguage");
 						frappe.show_alert({
 							message: __('An error occurred while changing language'),
 							indicator: 'red',
@@ -88,16 +76,11 @@ frappe.ui.form.on('User', {
 						frm.page.clear_indicator();
 					}
 				} catch (error) {
-					if (frappe.debug_mode) {
-						console.warn('[User Language] Error clearing indicator:', error);
-					}
+					console.log("[user_change_language.js] clearIndicator");
 				}
 			}, 100);
 		} catch (error) {
-			console.log("[user_change_language.js] refresh error:", error);
-			if (frappe.debug_mode) {
-				console.error('[User Language] Error in refresh handler:', error);
-			}
+			console.log("[user_change_language.js] refresh");
 		}
 	},
 });
