@@ -122,7 +122,7 @@ class ActiveUsers {
       try {
         frappe.call(data);
       } catch (e) {
-        console.log("[active_users_bundle.js] request error:", e.message || e);
+        console.log("[active_users_bundle.js] request:", e.message || e);
         this.error("An error has occurred while sending a request.");
         reject();
       }
@@ -263,7 +263,7 @@ class ActiveUsers {
       },
       "users list"
     ).catch((err) => {
-      console.log("[active_users_bundle.js] sync_data error:", err.message || err);
+      console.log("[active_users_bundle.js] sync_data:", err.message || err);
       this.$body.html(
         '<div class="text-danger" style="padding: 20px; text-align: center;">فشل في تحميل البيانات</div>'
       );
@@ -457,7 +457,7 @@ $(document).ready(function () {
       hideAllMenus();
     } catch (err) {
       try {
-        console.log("[file.*.vue,*.js] buttonHoverLeave error:", err);
+        console.log("[active_users_bundle.js] click:", err);
       } catch (_) {}
     }
   });
@@ -487,7 +487,7 @@ $(document).ready(function () {
       }
     } catch (err) {
       try {
-        console.log("[file.*.vue,*.js] buttonHoverLeave error:", err);
+        console.log("[active_users_bundle.js] click:", err);
       } catch (_) {}
     }
   });
