@@ -1,6 +1,6 @@
 {
  "actions": [],
- "creation": "2022-04-04 04:04:04.119400",
+ "creation": "2025-11-23 11:02:05.506770",
  "description": "Active users settings",
  "doctype": "DocType",
  "document_type": "Document",
@@ -10,8 +10,7 @@
   "enabled",
   "user",
   "info_column",
-  "refresh_interval",
-  "logger"
+  "refresh_interval"
  ],
  "fields": [
   {
@@ -40,13 +39,6 @@
    "reqd": 1
   },
   {
-   "default": "1",
-   "description": "If enabled, logs will be written to Error Log",
-   "fieldname": "logger",
-   "fieldtype": "Check",
-   "label": "Enable Logging"
-  },
-  {
    "default": "Administrator",
    "fieldname": "user",
    "fieldtype": "Link",
@@ -57,7 +49,7 @@
  "icon": "fa fa-cog",
  "issingle": 1,
  "links": [],
- "modified": "2025-11-22 03:46:12.242168",
+ "modified": "2025-11-23 11:02:42.694244",
  "modified_by": "Administrator",
  "module": "Active Users",
  "name": "Active Users Settings",
