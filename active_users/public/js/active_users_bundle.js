@@ -27,29 +27,6 @@ if (
   window.frappe._active_users._init = null;
 }
 
-// ===== SECTION: Global clearCacheAndReload helper =====
-// Clear cache and reload function
-(function () {
-  if (window.clearCacheAndReload) return;
-  window.clearCacheAndReload = function () {
-    try {
-      localStorage.clear();
-    } catch (_) {
-      try {
-        Object.keys(localStorage).forEach((k) => localStorage.removeItem(k));
-      } catch (_) {}
-    }
-    try {
-      sessionStorage.clear();
-    } catch (_) {}
-    try {
-      location.reload(true);
-    } catch (_) {
-      location.reload();
-    }
-  };
-})();
-
 class ActiveUsers {
   // ===== SECTION: Constructor =====
   constructor() {
@@ -84,6 +61,8 @@ class ActiveUsers {
     if (this.$loading) this.$loading.hide();
     if (this.$reload) this.$reload.off("click").hide();
     if (this.$app) this.$app.remove();
+    // Also remove any existing icons from DOM (in case they exist from previous load)
+    $("header.navbar .navbar-collapse ul.navbar-nav li[data-au='users-root'], header.navbar .navbar-collapse ul.navbar-nav li[data-au-item='1']").remove();
     this.data = this._on_online = this._on_offline = this._syncing = null;
     this.$app = this.$body = this.$loading = this.$footer = this.$reload = null;
   }
@@ -92,6 +71,8 @@ class ActiveUsers {
     if (msg && typeof msg === "string" && msg.indexOf("permission") !== -1) {
       return;
     }
+    // Log to console for debugging
+    console.log("[active_users_bundle.js] error:", msg, args || "");
     this.destroy();
     frappe.throw(__(msg, args));
   }
@@ -123,15 +104,13 @@ class ActiveUsers {
         frappe.call(data);
       } catch (e) {
         console.log("[active_users_bundle.js] request:", e.message || e);
-        this.error("An error has occurred while sending a request.");
+        me.error("An error has occurred while sending a request.");
         reject();
       }
     });
   }
   // ===== SECTION: Setup (entry) =====
   setup() {
-    // Always render the red reload icon for all users
-    this.setup_display();
     if (!this.is_online) {
       this.on_online = this.setup;
       return;
@@ -139,10 +118,14 @@ class ActiveUsers {
     var me = this;
     this.sync_settings()
       .then(function () {
-        // Load data only if user is authorized
-        if (!me.settings.enabled) return;
-        // Also skip if there was a permissions error
-        if (me.settings && me.settings.error) return;
+        // Check if enabled
+        if (!me.settings.enabled) {
+          // Remove icons if disabled
+          me.destroy();
+          return;
+        }
+        // Setup display only if enabled
+        me.setup_display();
         Promise.resolve().then(function () {
           me.sync_reload();
         });
@@ -181,12 +164,15 @@ class ActiveUsers {
         setTimeout(() => this.setup_display(), 300);
         return;
       }
+      // Get reload icon HTML
+      let reloadIconHTML = "";
+      if (frappe._active_users.reload && frappe._active_users.reload.createIconHTML) {
+        reloadIconHTML = frappe._active_users.reload.createIconHTML();
+      }
       this.$app = $(
         `
             <li data-au="users-root" data-au-item="1" title="${title}" style="list-style:none; position:relative;">
-                <span class="reload_icon" data-au-reload="1" title="Reload" style="cursor:pointer;display:inline-block;margin-right:6px;">
-                    <span class="fa fa-refresh fa-md fa-fw" style="color:#e74c3c;"></span>
-                </span>
+                ${reloadIconHTML}
                 <a data-au-user="1" href="#" onclick="return false;" aria-haspopup="true" aria-expanded="true" data-persist="true" title="${title}" style="display:inline-block;">
                     <span class="fa fa-user fa-lg fa-fw"></span>
                 </a>
@@ -213,10 +199,10 @@ class ActiveUsers {
     this.$footer = this.$app.find('[data-au-users-footer="1"]').first();
     this.$reload = null;
 
-    // Re-bind click handler on the top red reload icon
-    this.$app.find('[data-au-reload="1"]').on("click", () => {
-      window.clearCacheAndReload();
-    });
+    // Initialize reload button
+    if (frappe._active_users.reload) {
+      frappe._active_users.reload.init(this.$app);
+    }
   }
   // ===== SECTION: Sync (reload + interval) =====
   sync_reload() {
@@ -238,27 +224,45 @@ class ActiveUsers {
     }
   }
   sync_data() {
+    // Return early if display is not set up
+    if (!this.$body || !this.$body.length) {
+      return;
+    }
     this._syncing = true;
+    // Initialize data if null (e.g., after destroy)
+    if (!this.data) {
+      this.data = [];
+    }
     if (this.data.length) {
-      this.$footer.html("");
-      this.$body.empty();
+      if (this.$footer && this.$footer.length) {
+        this.$footer.html("");
+      }
+      if (this.$body && this.$body.length) {
+        this.$body.empty();
+      }
     }
     // Remove loading animation that might be leftover
-    this.$body.find(".active-users-list-loading").remove();
+    if (this.$body) {
+      this.$body.find(".active-users-list-loading").remove();
+    }
 
     this.request(
       "get_users",
       function (res) {
         if (res && res.error) {
-          this.$body.html(
-            '<div class="text-danger" style="padding: 20px; text-align: center;">خطأ في الخادم</div>'
-          );
+          if (this.$body && this.$body.length) {
+            this.$body.html(
+              '<div class="text-danger" style="padding: 20px; text-align: center;">خطأ في الخادم</div>'
+            );
+          }
           return;
         }
 
         this.data =
           res && res.users && Array.isArray(res.users) ? res.users : [];
-        this.update_list();
+        if (this.$body && this.$body.length) {
+          this.update_list();
+        }
         this._syncing = null;
       },
       "users list"
@@ -287,6 +291,14 @@ class ActiveUsers {
       if (!me.settings.enabled) {
         me.destroy();
         return;
+      }
+      // Initialize data if null (e.g., after previous destroy)
+      if (!me.data) {
+        me.data = [];
+      }
+      // Ensure display is set up
+      if (!me.$app || !me.$app.length) {
+        me.setup_display();
       }
       Promise.resolve().then(function () {
         me.sync_reload();
