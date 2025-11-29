@@ -17,4 +17,7 @@ doctype_list_js = {
 	"User": "public/js/user_bulk_enable_disable.js"
 }
 
-app_include_js = "assets/active_users/js/active_users_bundle.js"
+app_include_js = [
+	"assets/active_users/js/reload_button.js",
+	"assets/active_users/js/active_users_bundle.js"
+]
