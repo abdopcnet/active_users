@@ -13,5 +13,3 @@ class ActiveUsersSettings(Document):
             self.user = "Administrator"
         if self.refresh_interval is None or self.refresh_interval == 0:
             self.refresh_interval = 5
-        if self.logger is None:
-            self.logger = 1
