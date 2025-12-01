@@ -11,5 +11,3 @@ class ActiveUsersSettings(Document):
         # Set default values if not set
         if not self.user:
             self.user = "Administrator"
-        if self.refresh_interval is None or self.refresh_interval == 0:
-            self.refresh_interval = 5
