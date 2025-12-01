@@ -8,14 +8,55 @@
  *  Last Updated: 2025-07-10 04:05:00
  */
 
-/* alert("active_users loaded!");*/
-
 // ===== SECTION: Namespaces/Bootstrap =====
 frappe.provide('frappe._active_users');
-frappe.provide('frappe.dom');
+frappe.provide('frappe._active_users.menu');
 
-// ===== SECTION: Prevent duplicate initialization (destroy old instance if present) =====
-// Force clear any old cached versions
+// ===== SECTION: Menu Helpers =====
+frappe._active_users.menu = {
+	ensureOverlay: function () {
+		var $ov = $('[data-au-overlay="1"]').first();
+		if (!$ov.length) {
+			$('body').append(
+				'<div data-au-overlay="1" style="position:fixed;inset:0;background:rgba(0,0,0,0.35);visibility:hidden;opacity:0;transition:opacity 120ms ease;z-index:1040;"></div>',
+			);
+			$ov = $('[data-au-overlay="1"]').first();
+		}
+		return $ov;
+	},
+
+	hideAllMenus: function () {
+		$('[data-au-users-menu="1"], .active_users_menu').css({
+			visibility: 'hidden',
+			opacity: '0',
+		});
+		this.ensureOverlay().css({ visibility: 'hidden', opacity: '0' });
+	},
+
+	anchorMenu: function ($trigger, $menu) {
+		var rect = $trigger.get(0).getBoundingClientRect();
+		$menu.css({
+			position: 'fixed',
+			top: rect.bottom + 8 + 'px',
+			left: Math.min(Math.max(8, rect.left), Math.max(8, window.innerWidth - 360)) + 'px',
+			transform: 'none',
+			zIndex: 1050,
+			minWidth: '240px',
+			maxWidth: '380px',
+			maxHeight: '60vh',
+			overflow: 'auto',
+			background: '#fff',
+			border: '1px solid rgba(0,0,0,0.12)',
+			borderRadius: '8px',
+			boxShadow: '0 12px 28px rgba(0,0,0,0.15)',
+			padding: '10px 12px',
+			visibility: 'visible',
+			opacity: '1',
+		});
+	},
+};
+
+// ===== SECTION: Prevent duplicate initialization =====
 if (window.frappe && window.frappe._active_users && window.frappe._active_users._init) {
 	try {
 		window.frappe._active_users._init.destroy();
@@ -23,8 +64,8 @@ if (window.frappe && window.frappe._active_users && window.frappe._active_users.
 	window.frappe._active_users._init = null;
 }
 
+// ===== SECTION: ActiveUsers Main Class =====
 class ActiveUsers {
-	// ===== SECTION: Constructor =====
 	constructor() {
 		if (frappe.desk == null) {
 			frappe.throw(__('Active Users plugin can not be used outside Desk.'));
@@ -48,44 +89,41 @@ class ActiveUsers {
 
 		this.settings = {};
 		this.data = [];
-
 		this.setup();
 	}
-	// ===== SECTION: Teardown =====
+
 	destroy() {
 		this.clear_sync();
 		if (this.$loading) this.$loading.hide();
-		if (this.$reload) this.$reload.off('click').hide();
 		if (this.$app) this.$app.remove();
-		// Also remove any existing icons from DOM (in case they exist from previous load)
 		$(
 			"header.navbar .navbar-collapse ul.navbar-nav li[data-au='users-root'], header.navbar .navbar-collapse ul.navbar-nav li[data-au-item='1']",
 		).remove();
 		this.data = this._on_online = this._on_offline = this._syncing = null;
 		this.$app = this.$body = this.$loading = this.$footer = this.$reload = null;
 	}
+
 	error(msg, args) {
-		// If the error is permissions-related, ignore silently
 		if (msg && typeof msg === 'string' && msg.indexOf('permission') !== -1) {
 			return;
 		}
-		// Log to console for debugging
 		console.log('[active_users_bundle.js] error:', msg, args || '');
 		this.destroy();
 		frappe.throw(__(msg, args));
 	}
-	// ===== SECTION: RPC Wrapper =====
-	request(method, callback, type) {
+
+	// ===== SECTION: RPC Wrapper (simplified) =====
+	request(method, callback) {
 		var me = this;
 		return new Promise(function (resolve, reject) {
-			let data = {
+			frappe.call({
 				method: 'active_users.api.' + method,
 				async: true,
 				freeze: false,
 				callback: function (res) {
 					if (res && $.isPlainObject(res)) res = res.message || res;
 					if (!$.isPlainObject(res)) {
-						me.error('Active Users plugin received invalid ' + type + '.');
+						me.error('Active Users plugin received invalid response.');
 						reject();
 						return;
 					}
@@ -97,17 +135,10 @@ class ActiveUsers {
 					let val = callback && callback.call(me, res);
 					resolve(val || res);
 				},
-			};
-			try {
-				frappe.call(data);
-			} catch (e) {
-				console.log('[active_users_bundle.js] request:', e.message || e);
-				me.error('An error has occurred while sending a request.');
-				reject();
-			}
+			});
 		});
 	}
-	// ===== SECTION: Setup (entry) =====
+
 	setup() {
 		if (!this.is_online) {
 			this.on_online = this.setup;
@@ -116,60 +147,46 @@ class ActiveUsers {
 		var me = this;
 		this.sync_settings()
 			.then(function () {
-				// Check if enabled
 				if (!me.settings.enabled) {
-					// Remove icons if disabled
 					me.destroy();
 					return;
 				}
-				// Setup display only if enabled
 				me.setup_display();
-				Promise.resolve().then(function () {
-					me.sync_reload();
-				});
+				me.sync_reload();
 			})
-			.catch(function (error) {
-				// On permissions error, do nothing (no UI and no message)
-				return;
+			.catch(function () {
+				// On permissions error, do nothing
 			});
 	}
-	// ===== SECTION: Settings sync =====
+
 	sync_settings() {
-		return this.request(
-			'get_settings',
-			function (res) {
-				res.enabled = cint(res.enabled);
-				res.refresh_interval = cint(res.refresh_interval || 10) * 60000;
-				this.settings = res;
-			},
-			'settings',
-		);
+		return this.request('get_settings', function (res) {
+			this.settings = {
+				enabled: cint(res.enabled),
+				refresh_interval: cint(res.refresh_interval || 10) * 60000,
+			};
+		});
 	}
-	// ===== SECTION: Navbar UI (reload icon, users dropdown) =====
+
 	setup_display() {
 		let title = __('Active Users');
-		// If the navbar item already exists, reuse it
 		const $existing = $(
 			"header.navbar .navbar-collapse ul.navbar-nav li[data-au='users-root'], header.navbar .navbar-collapse ul.navbar-nav li[data-au-item='1']",
 		).first();
 		if ($existing.length) {
 			this.$app = $existing;
 		} else {
-			// Find a robust navbar target
 			let $nav = $('header.navbar .navbar-collapse ul.navbar-nav').first();
-			// If navbar not yet in DOM, retry shortly
 			if (!$nav.length) {
 				setTimeout(() => this.setup_display(), 300);
 				return;
 			}
-			// Get reload icon HTML
-			let reloadIconHTML = '';
-			if (frappe._active_users.reload && frappe._active_users.reload.createIconHTML) {
-				reloadIconHTML = frappe._active_users.reload.createIconHTML();
-			}
+			let reloadIconHTML =
+				frappe._active_users.reload && frappe._active_users.reload.createIconHTML
+					? frappe._active_users.reload.createIconHTML()
+					: '';
 			this.$app = $(
-				`
-            <li data-au="users-root" data-au-item="1" title="${title}" style="list-style:none; position:relative;">
+				`<li data-au="users-root" data-au-item="1" title="${title}" style="list-style:none; position:relative;">
                 ${reloadIconHTML}
                 <a data-au-user="1" href="#" onclick="return false;" aria-haspopup="true" aria-expanded="true" data-persist="true" title="${title}" style="display:inline-block;">
                     <span class="fa fa-user fa-lg fa-fw"></span>
@@ -180,12 +197,11 @@ class ActiveUsers {
                     </div>
                     <div style="width:100%; margin-top:6px;">
                         <div>
-                            <div data-au-users-footer="1" style="padding:4px 6px; color:#2c3e50;">المستخدمين النشطين</div>
+                            <div data-au-users-footer="1" style="padding:4px 6px; color:#2c3e50;"></div>
                         </div>
                     </div>
                 </div>
-            </li>
-        `,
+            </li>`,
 			);
 			$nav.prepend(this.$app.get(0));
 		}
@@ -194,87 +210,66 @@ class ActiveUsers {
 		this.$footer = this.$app.find('[data-au-users-footer="1"]').first();
 		this.$reload = null;
 
-		// Initialize reload button
 		if (frappe._active_users.reload) {
 			frappe._active_users.reload.init(this.$app);
 		}
 	}
-	// ===== SECTION: Sync (reload + interval) =====
+
 	sync_reload() {
 		if (!this.is_online) return;
 		this.clear_sync();
 		var me = this;
-		Promise.resolve()
-			.then(function () {
-				me.sync_data();
-			})
-			.then(function () {
-				me.setup_sync();
-			});
+		this.sync_data().then(function () {
+			me.setup_sync();
+		});
 	}
+
 	clear_sync() {
 		if (this.sync_timer) {
 			window.clearInterval(this.sync_timer);
 			this.sync_timer = null;
 		}
 	}
+
 	sync_data() {
-		// Return early if display is not set up
-		if (!this.$body || !this.$body.length) {
-			return;
-		}
+		if (!this.$body || !this.$body.length) return;
 		this._syncing = true;
-		// Initialize data if null (e.g., after destroy)
-		if (!this.data) {
-			this.data = [];
-		}
+		if (!this.data) this.data = [];
 		if (this.data.length) {
-			if (this.$footer && this.$footer.length) {
-				this.$footer.html('');
-			}
-			if (this.$body && this.$body.length) {
-				this.$body.empty();
-			}
+			this.$footer && this.$footer.length && this.$footer.html('');
+			this.$body && this.$body.length && this.$body.empty();
 		}
-		// Remove loading animation that might be leftover
-		if (this.$body) {
-			this.$body.find('.active-users-list-loading').remove();
-		}
+		this.$body.find('.active-users-list-loading').remove();
 
-		this.request(
-			'get_users',
-			function (res) {
-				if (res && res.error) {
-					if (this.$body && this.$body.length) {
-						this.$body.html(
-							'<div class="text-danger" style="padding: 20px; text-align: center;">خطأ في الخادم</div>',
-						);
-					}
-					return;
-				}
-
-				this.data = res && res.users && Array.isArray(res.users) ? res.users : [];
+		return this.request('get_users', function (res) {
+			if (res && res.error) {
 				if (this.$body && this.$body.length) {
-					this.update_list();
+					this.$body.html(
+						'<div class="text-danger" style="padding: 20px; text-align: center;">خطأ في الخادم</div>',
+					);
 				}
-				this._syncing = null;
-			},
-			'users list',
-		).catch((err) => {
+				return;
+			}
+			this.data = res && res.users && Array.isArray(res.users) ? res.users : [];
+			if (this.$body && this.$body.length) {
+				this.update_list();
+			}
+			this._syncing = null;
+		}).catch((err) => {
 			console.log('[active_users_bundle.js] sync_data:', err.message || err);
 			this.$body.html(
 				'<div class="text-danger" style="padding: 20px; text-align: center;">فشل في تحميل البيانات</div>',
 			);
 		});
 	}
-	// ===== SECTION: Interval setup =====
+
 	setup_sync() {
 		var me = this;
 		this.sync_timer = window.setInterval(function () {
 			me.sync_data();
 		}, this.settings.refresh_interval);
 	}
-	// ===== SECTION: Settings refresh entry =====
+
 	update_settings() {
 		if (!this.is_online) {
 			this.on_online = this.update_settings;
@@ -286,23 +281,17 @@ class ActiveUsers {
 				me.destroy();
 				return;
 			}
-			// Initialize data if null (e.g., after previous destroy)
-			if (!me.data) {
-				me.data = [];
-			}
-			// Ensure display is set up
+			if (!me.data) me.data = [];
 			if (!me.$app || !me.$app.length) {
 				me.setup_display();
 			}
-			Promise.resolve().then(function () {
-				me.sync_reload();
-			});
+			me.sync_reload();
 		});
 	}
-	// ===== SECTION: Render users list =====
+
 	update_list() {
-		// Clear everything completely
-		this.$body.empty().html('');
+		if (!this.$body || !this.$body.length) return;
+		this.$body.empty();
 
 		if (!this.data || !this.data.length) {
 			this.$body.html(
@@ -312,187 +301,83 @@ class ActiveUsers {
 			return;
 		}
 
-		// Build complete table HTML
-		let tableHTML = `
-            <div style="border: 1px solid #ddd; border-radius: 4px; overflow: hidden;">
+		let tableHTML = `<div style="border: 1px solid #ddd; border-radius: 4px; overflow: hidden;">
                 <div style="background: #f5f5f5; padding: 12px; border-bottom: 1px solid #ddd; font-weight: bold; display: flex;">
                     <div style="flex: 1; text-align: left; color: #333;">الاسم</div>
                     <div style="flex: 1; text-align: right; color: #333;">آخر نشاط</div>
-                </div>
-        `;
+                </div>`;
 
 		this.data.forEach(function (user, index) {
 			let firstName = user.first_name || 'غير محدد';
 			let lastActive = user.last_active || 'غير محدد';
-
-			// Format date if it's a valid date string
 			if (lastActive !== 'غير محدد' && typeof lastActive === 'string') {
 				try {
 					lastActive = frappe.datetime.str_to_user(lastActive);
-				} catch (e) {
-					// Date formatting failed, keep original value
-				}
+				} catch (e) {}
 			}
-
-			tableHTML += `
-                <div style="display: flex; padding: 10px 12px; border-bottom: 1px solid #f0f0f0; ${
-					index % 2 === 0 ? 'background: #fafafa;' : ''
-				}">
+			tableHTML += `<div style="display: flex; padding: 10px 12px; border-bottom: 1px solid #f0f0f0; ${
+				index % 2 === 0 ? 'background: #fafafa;' : ''
+			}">
                     <div style="flex: 1; text-align: left; font-weight: 500; color: #2c3e50;">${firstName}</div>
                     <div style="flex: 1; text-align: right; color: #7f8c8d; font-size: 14px;">${lastActive}</div>
-                </div>
-            `;
+                </div>`;
 		});
 
 		tableHTML += '</div>';
-
 		this.$body.html(tableHTML);
-		this.$footer.html('المستخدمين النشطين');
+		this.$footer.html('');
 	}
 }
 
+// ===== SECTION: Initialize =====
 frappe._active_users.init = function () {
 	if (frappe._active_users._init) {
 		try {
 			frappe._active_users._init.destroy();
-		} catch (e) {
-			// Error destroying old instance
-		}
+		} catch (e) {}
 	}
-
-	if (frappe.desk == null) {
-		return;
-	}
-
+	if (frappe.desk == null) return;
 	frappe._active_users._init = new ActiveUsers();
-
-	// Set a flag to indicate the new version is loaded
 	window.ACTIVE_USERS_V2_LOADED = true;
 };
 
+// ===== SECTION: Document Ready =====
 $(document).ready(function () {
 	frappe._active_users.init();
 
-	// ===== Inline modal helpers (centered menus with backdrop) =====
-	function ensureOverlay() {
-		var $ov = $('[data-au-overlay="1"]').first();
-		if (!$ov.length) {
-			$('body').append(
-				'<div data-au-overlay="1" style="position:fixed;inset:0;background:rgba(0,0,0,0.35);visibility:hidden;opacity:0;transition:opacity 120ms ease;z-index:1040;"></div>',
-			);
-			$ov = $('[data-au-overlay="1"]').first();
-		}
-		return $ov;
-	}
-	function showOverlay() {
-		ensureOverlay().css({ visibility: 'visible', opacity: '1' });
-	}
-	function hideOverlay() {
-		ensureOverlay().css({ visibility: 'hidden', opacity: '0' });
-	}
-	function centerMenu($menu, widthPx) {
-		var w = widthPx || 420;
-		// Clear dropdown positioning that may keep it at top/right
-		$menu.css({ right: 'auto', bottom: 'auto' });
-		$menu.css({
-			position: 'fixed',
-			top: '50%',
-			left: '50%',
-			transform: 'translate(-50%, -50%)',
-			zIndex: 1050,
-			minWidth: w + 'px',
-			maxWidth: '90vw',
-			maxHeight: '80vh',
-			overflow: 'auto',
-			background: '#fff',
-			border: '1px solid rgba(0,0,0,0.12)',
-			borderRadius: '8px',
-			boxShadow: '0 16px 36px rgba(0,0,0,0.22)',
-			padding: '14px 16px',
-			visibility: 'visible',
-			opacity: '1',
-		});
-	}
-	function hideMenu($menu) {
-		$menu.css({ visibility: 'hidden', opacity: '0' });
-	}
-	function hideAllMenus() {
-		hideMenu($('[data-au-users-menu="1"], .active_users_menu'));
-		hideOverlay();
-	}
-
-	// Initialize overlay once and bind outside click
-	ensureOverlay().on('click', function () {
-		hideAllMenus();
-	});
-	$(document).on('keydown', function (e) {
-		if (e.key === 'Escape') hideAllMenus();
+	// ===== Menu Event Handlers =====
+	var menu = frappe._active_users.menu;
+	menu.ensureOverlay().on('click', function () {
+		menu.hideAllMenus();
 	});
 
-	// Anchor a small dropdown to a trigger (no overlay)
-	function anchorMenu($trigger, $menu) {
-		var rect = $trigger.get(0).getBoundingClientRect();
-		var top = rect.bottom + 8;
-		var left = Math.min(Math.max(8, rect.left), Math.max(8, window.innerWidth - 360));
-		$menu.css({
-			position: 'fixed',
-			top: top + 'px',
-			left: left + 'px',
-			transform: 'none',
-			zIndex: 1050,
-			minWidth: '240px',
-			maxWidth: '380px',
-			maxHeight: '60vh',
-			overflow: 'auto',
-			background: '#fff',
-			border: '1px solid rgba(0,0,0,0.12)',
-			borderRadius: '8px',
-			boxShadow: '0 12px 28px rgba(0,0,0,0.15)',
-			padding: '10px 12px',
-			visibility: 'visible',
-			opacity: '1',
-		});
-	}
-
-	// Close on any outside click (no overlay needed for anchored dropdown)
-	$(document).on('click', function () {
-		try {
-			hideAllMenus();
-		} catch (err) {
+	$(document)
+		.on('keydown', function (e) {
+			if (e.key === 'Escape') menu.hideAllMenus();
+		})
+		.on('click', function () {
 			try {
+				menu.hideAllMenus();
+			} catch (err) {
 				console.log('[active_users_bundle.js] click:', err);
-			} catch (_) {}
-		}
-	});
-	// Prevent close when clicking inside the menus
-	$(document).on('click', '[data-au-users-menu="1"], .active_users_menu', function (ev) {
-		ev.stopPropagation();
-	});
-
-	// ===== Toggle users menu on click =====
-	$(document).on('click', '[data-au-user="1"]', function (ev) {
-		try {
-			ev.preventDefault();
-			ev.stopPropagation();
-			var $dropdown = $(this).closest('[data-au-item="1"]');
-			var $menu = $dropdown.find('.active_users_menu, [data-au-users-menu="1"]').first();
-			var isVisible = $menu.css('visibility') === 'visible';
-			hideAllMenus();
-			if (!isVisible) {
-				anchorMenu($(this), $menu);
-				// no overlay for anchored users menu
 			}
-		} catch (err) {
+		})
+		.on('click', '[data-au-users-menu="1"], .active_users_menu', function (ev) {
+			ev.stopPropagation();
+		})
+		.on('click', '[data-au-user="1"]', function (ev) {
 			try {
+				ev.preventDefault();
+				ev.stopPropagation();
+				var $dropdown = $(this).closest('[data-au-item="1"]');
+				var $menu = $dropdown.find('.active_users_menu, [data-au-users-menu="1"]').first();
+				var isVisible = $menu.css('visibility') === 'visible';
+				menu.hideAllMenus();
+				if (!isVisible) {
+					menu.anchorMenu($(this), $menu);
+				}
+			} catch (err) {
 				console.log('[active_users_bundle.js] click:', err);
-			} catch (_) {}
-		}
-	});
-
-	// Prevent clicks inside menus from bubbling and closing them
-	$(document).on('click', '[data-au-users-menu="1"]', function (ev) {
-		ev.stopPropagation();
-	});
-
-	// (Removed mouseleave auto-close to avoid premature closing on re-open attempts)
+			}
+		});
 });
