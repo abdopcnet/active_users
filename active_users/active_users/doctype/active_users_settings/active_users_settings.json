@@ -8,9 +8,7 @@
  "field_order": [
   "info_section",
   "enabled",
-  "user",
-  "info_column",
-  "refresh_interval"
+  "user"
  ],
  "fields": [
   {
@@ -24,21 +22,6 @@
    "label": "Is Enabled"
   },
   {
-   "fieldname": "info_column",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "5",
-   "description": "The number of minutes to wait before refreshing the active users list",
-   "fieldname": "refresh_interval",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "label": "Refresh Interval (Minutes)",
-   "non_negative": 1,
-   "read_only_depends_on": "eval:!doc.enabled",
-   "reqd": 1
-  },
-  {
    "default": "Administrator",
    "fieldname": "user",
    "fieldtype": "Link",
@@ -49,7 +32,7 @@
  "icon": "fa fa-cog",
  "issingle": 1,
  "links": [],
- "modified": "2025-11-23 11:02:42.694244",
+ "modified": "2025-12-01 16:54:19.784726",
  "modified_by": "Administrator",
  "module": "Active Users",
  "name": "Active Users Settings",
