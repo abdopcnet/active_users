@@ -33,7 +33,7 @@ def get_settings():
         
         result = _dict({
             "enabled": cint(getattr(app, "enabled", 0)),
-            "refresh_interval": cint(getattr(app, "refresh_interval", 5))
+            "refresh_interval": cint(getattr(app, "refresh_interval", 10))
         })
         
         return result
