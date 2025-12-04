@@ -20,5 +20,5 @@ def get_data():
             }
         ]
     except Exception as e:
-        frappe.log_error(f"[desktop.py] get_data: {str(e)}")
+        frappe.log_error(f"[desktop.py] get_data (error)")
         return []
