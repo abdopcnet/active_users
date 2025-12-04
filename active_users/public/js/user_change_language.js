@@ -23,14 +23,24 @@ frappe.ui.form.on('User', {
 								frappe.set_route('Form', 'User', frm.doc.name);
 							})
 							.catch((error) => {
-								console.log("[user_change_language.js] saveLanguage");
+								var errMsg =
+									error && error.message
+										? error.message.substring(0, 50)
+										: 'save_failed';
+								console.log(
+									'[user_change_language.js] saveLanguage (' + errMsg + ')',
+								);
 								frappe.show_alert({
 									message: __('Failed to change language'),
 									indicator: 'red',
 								});
 							});
 					} catch (error) {
-						console.log("[user_change_language.js] changeLanguage");
+						var errMsg =
+							error && error.message
+								? error.message.substring(0, 50)
+								: 'change_failed';
+						console.log('[user_change_language.js] changeLanguage (' + errMsg + ')');
 						frappe.show_alert({
 							message: __('An error occurred while changing language'),
 							indicator: 'red',
@@ -51,14 +61,24 @@ frappe.ui.form.on('User', {
 								frappe.set_route('Form', 'User', frm.doc.name);
 							})
 							.catch((error) => {
-								console.log("[user_change_language.js] saveLanguage");
+								var errMsg =
+									error && error.message
+										? error.message.substring(0, 50)
+										: 'save_failed';
+								console.log(
+									'[user_change_language.js] saveLanguage (' + errMsg + ')',
+								);
 								frappe.show_alert({
 									message: __('Failed to change language'),
 									indicator: 'red',
 								});
 							});
 					} catch (error) {
-						console.log("[user_change_language.js] changeLanguage");
+						var errMsg =
+							error && error.message
+								? error.message.substring(0, 50)
+								: 'change_failed';
+						console.log('[user_change_language.js] changeLanguage (' + errMsg + ')');
 						frappe.show_alert({
 							message: __('An error occurred while changing language'),
 							indicator: 'red',
@@ -76,11 +96,15 @@ frappe.ui.form.on('User', {
 						frm.page.clear_indicator();
 					}
 				} catch (error) {
-					console.log("[user_change_language.js] clearIndicator");
+					var errMsg =
+						error && error.message ? error.message.substring(0, 50) : 'clear_failed';
+					console.log('[user_change_language.js] clearIndicator (' + errMsg + ')');
 				}
 			}, 100);
 		} catch (error) {
-			console.log("[user_change_language.js] refresh");
+			var errMsg =
+				error && error.message ? error.message.substring(0, 50) : 'refresh_failed';
+			console.log('[user_change_language.js] refresh (' + errMsg + ')');
 		}
 	},
 });
