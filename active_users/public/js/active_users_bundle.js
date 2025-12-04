@@ -107,7 +107,8 @@ class ActiveUsers {
 		if (msg && typeof msg === 'string' && msg.indexOf('permission') !== -1) {
 			return;
 		}
-		console.log('[active_users_bundle.js] error:', msg, args || '');
+		var shortMsg = msg && typeof msg === 'string' ? msg.substring(0, 50) : 'error';
+		console.log('[active_users_bundle.js] error (' + shortMsg + ')');
 		this.destroy();
 		frappe.throw(__(msg, args));
 	}
@@ -123,11 +124,13 @@ class ActiveUsers {
 				callback: function (res) {
 					if (res && $.isPlainObject(res)) res = res.message || res;
 					if (!$.isPlainObject(res)) {
+						console.log('[active_users_bundle.js] request (invalid_response)');
 						me.error('Active Users plugin received invalid response.');
 						reject();
 						return;
 					}
 					if (res.error) {
+						console.log('[active_users_bundle.js] request (api_error)');
 						me.error(res.message);
 						reject();
 						return;
@@ -161,9 +164,10 @@ class ActiveUsers {
 
 	sync_settings() {
 		return this.request('get_settings', function (res) {
+			// Hardcoded refresh interval: 10 minutes (600000 ms)
 			this.settings = {
 				enabled: cint(res.enabled),
-				refresh_interval: cint(res.refresh_interval || 10) * 60000,
+				refresh_interval: 600000,
 			};
 		});
 	}
@@ -256,7 +260,8 @@ class ActiveUsers {
 			}
 			this._syncing = null;
 		}).catch((err) => {
-			console.log('[active_users_bundle.js] sync_data:', err.message || err);
+			var errMsg = err && err.message ? err.message.substring(0, 50) : 'sync_failed';
+			console.log('[active_users_bundle.js] sync_data (' + errMsg + ')');
 			this.$body.html(
 				'<div class="text-danger" style="padding: 20px; text-align: center;">فشل في تحميل البيانات</div>',
 			);
@@ -359,7 +364,8 @@ $(document).ready(function () {
 			try {
 				menu.hideAllMenus();
 			} catch (err) {
-				console.log('[active_users_bundle.js] click:', err);
+				var errMsg = err && err.message ? err.message.substring(0, 50) : 'click_error';
+				console.log('[active_users_bundle.js] click (' + errMsg + ')');
 			}
 		})
 		.on('click', '[data-au-users-menu="1"], .active_users_menu', function (ev) {
@@ -377,7 +383,8 @@ $(document).ready(function () {
 					menu.anchorMenu($(this), $menu);
 				}
 			} catch (err) {
-				console.log('[active_users_bundle.js] click:', err);
+				var errMsg = err && err.message ? err.message.substring(0, 50) : 'click_error';
+				console.log('[active_users_bundle.js] click (' + errMsg + ')');
 			}
 		});
 });
