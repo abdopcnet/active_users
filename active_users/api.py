@@ -15,37 +15,40 @@ from frappe.utils import (
     nowdate
 )
 
-# دالة لجلب DocType الإعدادات
+# دالة لجلب الإعدادات (قيم ثابتة)
 def settings():
-    return frappe.get_single("Active Users Settings")
+    class SettingsObj:
+        def __init__(self):
+            self.enabled = 1
+            self.user = "Administrator"
+    return SettingsObj()
 
-# Fetch application settings without cache
+# Fetch application settings (hardcoded values)
 @frappe.whitelist()
 def get_settings():
-    """Retrieve application settings from Active Users Settings DocType (no cache)."""
     try:
+        # Check if user is Administrator
+        if frappe.session.user != "Administrator":
+            return {"enabled": 0}
+        
         app = settings()
-        
-        # تحقق من صلاحية المستخدم بناءً على حقل user في DocType
-        allowed_user = getattr(app, "user", "Administrator")
-        if frappe.session.user != allowed_user and frappe.session.user != "Administrator":
-            return {"error": 1, "message": _( "You do not have permission to access this resource.")}
-        
         result = _dict({
-            "enabled": cint(getattr(app, "enabled", 0)),
-            "refresh_interval": cint(getattr(app, "refresh_interval", 10))
+            "enabled": cint(app.enabled)
         })
-        
         return result
     except Exception as e:
-        frappe.log_error(f"[api.py] get_settings: {str(e)[:100]}")
-        return {"error": 1, "message": _( "An error occurred while fetching settings.")}
+        frappe.log_error(f"[api.py] get_settings (error)")
+        return {"enabled": 0}
 
 # Fetch active system users from User DocType (last 5 minutes)
 @frappe.whitelist()
 def get_users():
     """Return each unique first_name with the latest last_active, sorted by last_active desc, only enabled users with non-null last_active."""
     try:
+        # Check if user is Administrator
+        if frappe.session.user != "Administrator":
+            return {"error": 1, "message": _( "You do not have permission to access this resource.")}
+        
         if not frappe.has_permission("User", "read"):
             return {"error": 1, "message": _( "You do not have permission to access this resource.")}
 
@@ -64,7 +67,7 @@ def get_users():
         
         return {"users": users}
     except Exception as e:
-        frappe.log_error(f"[api.py] get_users: {str(e)[:100]}")
+        frappe.log_error(f"[api.py] get_users (error)")
         return {"error": 1, "message": _( "Unable to get the list of users.")}
 
 
