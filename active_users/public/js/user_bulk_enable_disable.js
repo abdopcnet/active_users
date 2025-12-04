@@ -29,7 +29,13 @@ frappe.listview_settings['User'] = {
 								});
 							} catch (error) {
 								errorCount++;
-								console.log(`[user_bulk_enable_disable.js] enableUser: ${row.name}`);
+								var errMsg =
+									error && error.message
+										? error.message.substring(0, 50)
+										: 'enable_failed';
+								console.log(
+									'[user_bulk_enable_disable.js] enableUser (' + errMsg + ')',
+								);
 								frappe.show_alert({
 									message: __('Failed to enable {0}', [row.name]),
 									indicator: 'red',
@@ -53,7 +59,11 @@ frappe.listview_settings['User'] = {
 
 						listview.refresh();
 					} catch (error) {
-						console.log("[user_bulk_enable_disable.js] enableUsers");
+						var errMsg =
+							error && error.message
+								? error.message.substring(0, 50)
+								: 'enable_all_failed';
+						console.log('[user_bulk_enable_disable.js] enableUsers (' + errMsg + ')');
 						frappe.show_alert({
 							message: __('An error occurred while enabling users'),
 							indicator: 'red',
@@ -103,7 +113,13 @@ frappe.listview_settings['User'] = {
 								});
 							} catch (error) {
 								errorCount++;
-								console.log(`[user_bulk_enable_disable.js] disableUser: ${row.name}`);
+								var errMsg =
+									error && error.message
+										? error.message.substring(0, 50)
+										: 'disable_failed';
+								console.log(
+									'[user_bulk_enable_disable.js] disableUser (' + errMsg + ')',
+								);
 								frappe.show_alert({
 									message: __('Failed to disable {0}', [row.name]),
 									indicator: 'red',
@@ -127,7 +143,11 @@ frappe.listview_settings['User'] = {
 
 						listview.refresh();
 					} catch (error) {
-						console.log("[user_bulk_enable_disable.js] disableUsers");
+						var errMsg =
+							error && error.message
+								? error.message.substring(0, 50)
+								: 'disable_all_failed';
+						console.log('[user_bulk_enable_disable.js] disableUsers (' + errMsg + ')');
 						frappe.show_alert({
 							message: __('An error occurred while disabling users'),
 							indicator: 'red',
@@ -188,7 +208,15 @@ frappe.listview_settings['User'] = {
 											successCount++;
 										} catch (error) {
 											errorCount++;
-											console.log(`[user_bulk_enable_disable.js] disableAll: ${user.name}`);
+											var errMsg =
+												error && error.message
+													? error.message.substring(0, 50)
+													: 'disable_all_failed';
+											console.log(
+												'[user_bulk_enable_disable.js] disableAll (' +
+													errMsg +
+													')',
+											);
 										}
 									}
 
@@ -212,7 +240,15 @@ frappe.listview_settings['User'] = {
 
 									listview.refresh();
 								} catch (error) {
-									console.log("[user_bulk_enable_disable.js] disableAll");
+									var errMsg =
+										error && error.message
+											? error.message.substring(0, 50)
+											: 'disable_all_failed';
+									console.log(
+										'[user_bulk_enable_disable.js] disableAll (' +
+											errMsg +
+											')',
+									);
 									frappe.show_alert({
 										message: __('An error occurred while disabling users'),
 										indicator: 'red',
@@ -220,7 +256,13 @@ frappe.listview_settings['User'] = {
 								}
 							},
 							error: function (error) {
-								console.log("[user_bulk_enable_disable.js] fetchUsers");
+								var errMsg =
+									error && error.message
+										? error.message.substring(0, 50)
+										: 'fetch_failed';
+								console.log(
+									'[user_bulk_enable_disable.js] fetchUsers (' + errMsg + ')',
+								);
 								frappe.show_alert({
 									message: __('Failed to fetch users list'),
 									indicator: 'red',
