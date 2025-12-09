@@ -1,0 +1,22 @@
+Metadata-Version: 2.4
+Name: active_users
+Version: 25.11.2025
+Summary: active_users
+Author: future-support
+Author-email: abdopcnet@gmail.com
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Dynamic: author-email
+Dynamic: license-file
+
+## active_users
+
+![Version](https://img.shields.io/badge/version-25.11.2025-blue)
+
+
+active_users
+
+#### License
+
+mit
